@@ -1,0 +1,1894 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>山海入梦：少年寻灵记</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', 'SimHei', sans-serif;
+            background: #000;
+            color: #fff;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        #game-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #background-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        #content-overlay {
+            position: absolute;
+            z-index: 10;
+            width: 90%;
+            max-width: 1400px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: row;
+            align-items: flex-start;
+            gap: 20px;
+        }
+
+        #content-overlay.no-sprites {
+            justify-content: center;
+        }
+
+        #content-overlay.no-sprites #text-container {
+            max-width: 800px;
+        }
+
+        #sprite-container {
+            flex: 0 0 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .sprite-box {
+            background: rgba(0, 0, 0, 0.85);
+            border: 3px solid #8B7355;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.1);
+            text-align: center;
+        }
+
+        .sprite-box h3 {
+            color: #F4D03F;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .sprite-image {
+            max-width: 100%;
+            max-height: 250px;
+            border-radius: 10px;
+            border: 2px solid #8B7355;
+            object-fit: contain;
+            background: rgba(139, 115, 85, 0.2);
+            position: relative;
+        }
+
+        .npc-image {
+            max-width: 100%;
+            max-height: 250px;
+            border-radius: 10px;
+            border: 2px solid #85C1E2;
+            object-fit: contain;
+            background: rgba(133, 193, 226, 0.2);
+        }
+
+        @keyframes npcAppear {
+            0% {
+                opacity: 0;
+                transform: translateY(30px) scale(0.8);
+                filter: blur(5px);
+            }
+            50% {
+                transform: translateY(-5px) scale(1.05);
+                box-shadow: 0 0 20px rgba(133, 193, 226, 0.6);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+                filter: blur(0);
+                box-shadow: 0 0 15px rgba(133, 193, 226, 0.4);
+            }
+        }
+
+        @keyframes npcBoxAppear {
+            0% {
+                opacity: 0;
+                transform: translateY(20px) scale(0.95);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .npc-appear {
+            animation: npcAppear 0.8s ease-out forwards;
+        }
+
+        .npc-box-appear {
+            animation: npcBoxAppear 0.6s ease-out forwards;
+        }
+
+        @keyframes itemAppear {
+            0% {
+                opacity: 0;
+                transform: translateY(30px) scale(0.8) rotate(-5deg);
+                filter: blur(5px) brightness(0.5);
+            }
+            30% {
+                filter: blur(2px) brightness(1.5) drop-shadow(0 0 20px rgba(255, 215, 0, 0.8));
+            }
+            50% {
+                transform: translateY(-5px) scale(1.05) rotate(2deg);
+                filter: blur(0) brightness(1.8) drop-shadow(0 0 30px rgba(255, 215, 0, 1));
+            }
+            70% {
+                filter: blur(0) brightness(1.3) drop-shadow(0 0 25px rgba(255, 215, 0, 0.9));
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1) rotate(0deg);
+                filter: blur(0) brightness(1) drop-shadow(0 0 15px rgba(255, 215, 0, 0.6));
+            }
+        }
+
+        @keyframes itemGlow {
+            0%, 100% {
+                box-shadow: 0 0 10px rgba(255, 215, 0, 0.4), 0 0 20px rgba(255, 215, 0, 0.3), inset 0 0 20px rgba(255, 215, 0, 0.2);
+            }
+            50% {
+                box-shadow: 0 0 20px rgba(255, 215, 0, 0.8), 0 0 40px rgba(255, 215, 0, 0.6), inset 0 0 30px rgba(255, 215, 0, 0.4);
+            }
+        }
+
+        @keyframes itemBoxAppear {
+            0% {
+                opacity: 0;
+                transform: translateY(20px) scale(0.95);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .item-appear {
+            animation: itemAppear 1s ease-out forwards;
+        }
+
+        .item-glow {
+            animation: itemGlow 2s ease-in-out infinite;
+        }
+
+        .item-box-appear {
+            animation: itemBoxAppear 0.6s ease-out forwards;
+        }
+
+        #text-container {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.85);
+            border: 3px solid #8B7355;
+            border-radius: 15px;
+            padding: 30px;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.1);
+        }
+
+        #text-content {
+            font-size: 18px;
+            line-height: 1.8;
+            color: #E8D5B7;
+            text-align: justify;
+        }
+
+        #text-content h2 {
+            color: #F4D03F;
+            margin-bottom: 15px;
+            text-align: center;
+            font-size: 24px;
+        }
+
+        #text-content h3 {
+            color: #85C1E2;
+            margin: 20px 0 10px 0;
+            font-size: 20px;
+        }
+
+        #choices-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        .choice-btn {
+            background: linear-gradient(135deg, #4A5D23 0%, #2C3E1F 100%);
+            border: 2px solid #8B7355;
+            border-radius: 10px;
+            padding: 15px 25px;
+            color: #E8D5B7;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: left;
+            font-family: inherit;
+        }
+
+        .choice-btn:hover {
+            background: linear-gradient(135deg, #5A6D33 0%, #3C4E2F 100%);
+            border-color: #A68B6B;
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(255, 255, 255, 0.2);
+        }
+
+        .choice-btn:active {
+            transform: translateX(2px);
+        }
+
+
+        .highlight {
+            color: #F4D03F;
+            font-weight: bold;
+        }
+
+        .item-name {
+            color: #85C1E2;
+            font-weight: bold;
+        }
+
+        .location-name {
+            color: #E74C3C;
+            font-weight: bold;
+        }
+
+        #text-container::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        #text-container::-webkit-scrollbar-track {
+            background: rgba(139, 115, 85, 0.3);
+            border-radius: 5px;
+        }
+
+        #text-container::-webkit-scrollbar-thumb {
+            background: #8B7355;
+            border-radius: 5px;
+        }
+
+        #text-container::-webkit-scrollbar-thumb:hover {
+            background: #A68B6B;
+        }
+
+        /* 背景音乐控制按钮 */
+        #music-control {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid #8B7355;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+        }
+
+        #music-control:hover {
+            background: rgba(0, 0, 0, 0.9);
+            border-color: #A68B6B;
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+        }
+
+        #music-control.muted {
+            opacity: 0.5;
+        }
+
+        #music-control svg {
+            width: 24px;
+            height: 24px;
+            fill: #E8D5B7;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .choice-label {
+            color: #F4D03F;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .items-display {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(139, 115, 85, 0.3);
+            border-radius: 8px;
+            border: 1px solid #8B7355;
+        }
+
+        .item-icon {
+            display: inline-block;
+            vertical-align: middle;
+            width: 30px;
+            height: 30px;
+            margin: 0 5px;
+            border-radius: 5px;
+            border: 1px solid #8B7355;
+        }
+
+        @media (max-width: 1024px) {
+            #content-overlay {
+                flex-direction: column;
+            }
+            #sprite-container {
+                flex: 0 0 auto;
+                width: 100%;
+                flex-direction: row;
+                justify-content: space-around;
+            }
+            .sprite-box {
+                flex: 1;
+                max-width: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <img id="background-image" src="" alt="背景图">
+        <!-- 背景音乐 -->
+        <audio id="background-music" loop preload="auto" playsinline>
+            <source src="assets/music/background (2).mp3" type="audio/mpeg">
+        </audio>
+        <!-- 音乐控制按钮 -->
+        <div id="music-control" title="点击开启/关闭背景音乐">
+            <svg id="music-icon-on" viewBox="0 0 24 24" style="display: block;">
+                <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+            </svg>
+            <svg id="music-icon-off" viewBox="0 0 24 24" style="display: none;">
+                <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
+            </svg>
+        </div>
+        <div id="content-overlay">
+            <div id="sprite-container">
+                <div id="npc-box" class="sprite-box" style="display: none;">
+                    <h3>角色</h3>
+                    <img id="npc-image" class="npc-image" src="" alt="NPC">
+                </div>
+                <div id="item-box" class="sprite-box" style="display: none;">
+                    <h3>道具</h3>
+                    <img id="item-image" class="sprite-image" src="" alt="道具">
+                </div>
+            </div>
+            <div id="text-container">
+                <div id="text-content"></div>
+                <div id="choices-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const gameState = {
+            currentScene: 'start',
+            collectedItems: [], // 保留用于兼容，但不使用
+            nanshanItems: [], // 南山经收集的物品
+            xishanItems: [], // 西山经收集的物品
+            beishanItems: [], // 北山经收集的物品
+            dongshanItems: [], // 东山经收集的物品
+            completedQuests: []
+        };
+
+        // 道具和NPC图片映射
+        const spriteMap = {
+            '祝余': 'assets/sprites/jiatiaocao.jpg',
+            '鹿蜀的毛发': 'assets/sprites/lushumaofa.PNG',
+            '灌灌的羽毛': 'assets/sprites/guanguanyumao.PNG',
+            '沙棠': 'assets/sprites/shatang.jpg',
+            '条草': 'assets/sprites/tiaocao.PNG',
+            '穷奇的趾甲': 'assets/sprites/qiongqidezhijia.PNG',
+            '鹿蜀': 'assets/sprites/lushu.jpg',
+            '灌灌': 'assets/sprites/guanguan.PNG',
+            '陆吾': 'assets/sprites/luwu.PNG',
+            '穷奇': 'assets/sprites/qiongqi.PNG',
+            '白泽': 'assets/sprites/baize.png',
+            '书本': 'assets/sprites/shuben.jpg',
+            '何罗鱼的鳞片': 'assets/sprites/heluoyudelinpian.png',
+            '何罗鱼': 'assets/sprites/heluoyu.PNG',
+            '渔翁': 'assets/sprites/yuweng.PNG',
+            '孟槐的毛发': 'assets/sprites/menghuaidemaofa.PNG',
+            '孟槐': 'assets/sprites/menghuai.jpg',
+            '受伤的孟槐': 'assets/sprites/menghuaishoushang.jpg',
+            '鳛鳛鱼的鳞片': 'assets/sprites/xixiyudelinpian.PNG',
+            '青碧石': 'assets/sprites/qingbishi.png',
+            '从从': 'assets/sprites/congcong.png',
+            '从从吃祝余': 'assets/sprites/congcongchizhuyu.png',
+            '当康': 'assets/sprites/dangkang.png',
+            '当康之牙': 'assets/sprites/dangkangdeya.png',
+            '当康拱麦子': 'assets/sprites/dangkanggongmaizi.png',
+            '谷物种子': 'assets/sprites/zhangxinzhongzi.jpg',
+            '犰狳': 'assets/sprites/qiuyu.jpg',
+            '犰狳之鳞': 'assets/sprites/qiuyuhelinpian.png',
+            '驱虫草药': 'assets/sprites/beibaocaoyao.jpg',
+            '蝗虫': 'assets/sprites/huangchong.jpg',
+            '充满青碧石的溪底': 'assets/sprites/chongmanqingbishideshuidi.png'
+        };
+
+        const scenes = {
+            opening_1: {
+                bg: 'assets/bg/bg_wo.png',
+                text: '<h2>山海入梦：少年寻灵记</h2>',
+                choices: [
+                    { text: '开始', action: 'opening_2' }
+                ],
+                npc: null,
+                item: '书本'
+            },
+            opening_2: {
+                bg: 'assets/bg/bg_wo.png',
+                text: '<p>突然，一道白光出现，一个身影缓缓浮现——正是传说中的<span class="item-name">白泽</span>。</p>',
+                choices: [
+                    { text: '继续', action: 'opening_3' }
+                ],
+                npc: '白泽',
+                item: null
+            },
+            opening_3: {
+                bg: 'assets/bg/bg_wo.png',
+                text: '<p><span class="item-name">白泽</span>说："这里是《山海经》的灵境，你的魂魄因对典籍的执念而来。若三日之内无法返回，魂魄便会与这灵境相融，人间的躯体也将永眠不醒。"</p><p>我问："白泽先生，求求您帮帮我！我该如何回到自己的世界？"</p><p><span class="item-name">白泽</span>说："不必慌张。我可助你返程，但需你帮我一事——我需集齐东西南北四山经中的灵草与至宝，用以维系灵境平衡。这张地图会为你指引方位，上面记载着所需之物的形貌与居所，若你能一一寻来，我便为你打开返程之门。"</p>',
+                choices: [
+                    { text: '继续', action: 'opening_4' }
+                ],
+                npc: '白泽',
+                item: null
+            },
+            opening_4: {
+                bg: 'assets/bg/bg_daditu.PNG',
+                text: function() {
+                    const isAllComplete = checkAllQuestsComplete();
+                    if (isAllComplete) {
+                        return '<h2>山海经·四山经</h2><p style="text-align: center; font-size: 24px; color: #F4D03F; margin: 20px 0;"><strong>南山经</strong>　<strong>西山经</strong>　<strong>北山经</strong>　<strong>东山经</strong></p><p>古老的山川河流在眼前缓缓浮现，仿佛在诉说着千年的传说...</p><p style="color: #F4D03F; font-size: 20px; text-align: center; margin-top: 30px;"><strong>恭喜！你已经集齐了四山经中的所有灵草与至宝！</strong></p><p style="text-align: center; margin-top: 20px;">白泽的声音在耳边响起："小友，你已成功完成了所有四山经的探索，集齐了所有灵草与至宝。现在，是时候开启返程之门了。"</p>';
+                    } else {
+                        return '<h2>山海经·四山经</h2><p style="text-align: center; font-size: 24px; color: #F4D03F; margin: 20px 0;"><strong>南山经</strong>　<strong>西山经</strong>　<strong>北山经</strong>　<strong>东山经</strong></p><p>古老的山川河流在眼前缓缓浮现，仿佛在诉说着千年的传说...可前往集齐灵草与至宝。你可以选择任意章节开始探索，顺序不限。</p>';
+                    }
+                },
+                choices: function() {
+                    const isAllComplete = checkAllQuestsComplete();
+                    if (isAllComplete) {
+                        return [
+                            { text: '前往白泽处，开启返程之门', action: 'game_complete' }
+                        ];
+                    } else {
+                        return [
+                            { text: '前往南山经', action: 'nanshanjing_map' },
+                            { text: '前往西山经', action: 'xishanjing_map' },
+                            { text: '前往北山经', action: 'beishanjing_map' },
+                            { text: '前往东山经', action: 'dongshanjing_map' }
+                        ];
+                    }
+                },
+                npc: function() {
+                    const isAllComplete = checkAllQuestsComplete();
+                    return isAllComplete ? '白泽' : null;
+                },
+                item: null,
+                hideItems: true
+            },
+            start: {
+                bg: 'assets/bg/bg_daditu.PNG',
+                text: '<h2>山海入梦：少年寻灵记</h2><p>一张泛着微光的大地图凭空展开，古老的山川河流在眼前缓缓浮现，仿佛在诉说着千年的传说...</p>',
+                choices: [
+                    { text: '接受指令', action: 'opening_4' }
+                ],
+                npc: null,
+                item: null,
+                hideItems: true
+            },
+            nanshanjing_map: {
+                bg: 'assets/bg/bg_nanshanjing.PNG',
+                text: '<h2>南山经·舆图</h2><p>雾气散去，一张恢弘的山系图在眼前铺开：青绿色的线条蜿蜒曲折，标注着一座座无名山峦，河流如银带穿梭其间，背景里隐约可见南海的粼粼波光。图上文字缓缓浮现：<span class="highlight">"南山经所载，皆为南方山系，西起浙江舟山群岛，东至湖南西部，北抵广东南海之滨。此域多桂树金璧，藏奇花异兽，蕴天地灵秀之气。"</span></p><p>舆图隐去，三道灵光悬浮眼前，分别对应三件待寻之物：</p><h3>选项A：祝余（招摇山·饥馑之解）</h3><p>【祝余·标注页】祝余长在招摇山上，招摇紧靠西海，山上长有许多桂树，还有许多金和玉。祝余形状像韭菜，开青色的花，人吃了它，就不会感到饥饿。</p><h3>选项B：鹿蜀的毛发（杻阳山·福泽之辨）</h3><p>【鹿蜀毛发·标注页】鹿蜀生活在杻阳山上。山的南面有很多赤金，山的北面有很多白金。鹿蜀形如马，头为白色，身上有老虎一样的花纹，而且还有红色的尾巴，发音就像唱歌一样，据说佩戴它的皮毛能福延子孙。</p><h3>选项C：灌灌的羽毛（青丘山·迷雾之警）</h3><p>【灌灌羽毛·标注页】灌灌生活在青丘山中，山的南面有很多玉石，山的北面有许多可做青色颜料的矿物。灌灌的形状像鸠，叫声像人们大声斥骂的声音，把它的羽毛佩戴在身上，人就不会迷惑。</p>',
+                choices: function() {
+                    const choices = [];
+                    if (!gameState.completedQuests.includes('zhaoyaoshan')) {
+                        choices.push({ text: '选项A：前往招摇山寻找祝余', action: 'zhaoyaoshan_start' });
+                    }
+                    if (!gameState.completedQuests.includes('niuyangshan')) {
+                        choices.push({ text: '选项B：前往杻阳山寻找鹿蜀的毛发', action: 'niuyangshan_start' });
+                    }
+                    if (!gameState.completedQuests.includes('qingqiushan')) {
+                        choices.push({ text: '选项C：前往青丘山寻找灌灌的羽毛', action: 'qingqiushan_start' });
+                    }
+                    if (choices.length === 0) {
+                        choices.push({ text: '前往下一章节', action: 'chapter_complete' });
+                    }
+                    return choices;
+                },
+                npc: null,
+                item: null,
+                hideItems: true
+            },
+            zhaoyaoshan_start: {
+                bg: 'assets/bg/bg_zhaoyaoshan.jpg',
+                text: '<h2>招摇山</h2><p>指尖触碰灵光的瞬间，风声骤起，我已站在一座云雾缭绕的山巅——<span class="location-name">招摇山</span>。脚下是青黑色的岩石，身旁遍布葱郁的桂树，细碎的金黄花瓣簌簌飘落，香气浓郁得让人沉醉，连呼吸都裹着甜润。远处隐约可见一片蔚蓝，水波荡漾，想必便是西海了。山壁间偶尔闪过点点金光，想必是蕴藏的金玉，果如地图所载。</p><p>前行不久，一株奇特的树木拦住去路：树干粗壮如桶，树皮是深邃的墨色，带着天然的扭曲纹路，竟与构树有几分相似。最奇的是枝头的花，不是寻常的姹紫嫣红，而是透着莹润的碧色微光，如同缀满了细碎的星辰，光芒虽柔，却足以驱散周遭的雾气，照亮脚下的青石路——这便是<span class="item-name">迷榖树</span>，传说佩戴其枝可避迷途。</p>',
+                choices: [
+                    { text: '选择A：折下树枝带在身上', action: 'zhaoyaoshan_take_branch' },
+                    { text: '选择B：忽视这棵树继续出发', action: 'zhaoyaoshan_ignore_branch' }
+                ],
+                npc: null,
+                item: null
+            },
+            zhaoyaoshan_take_branch: {
+                bg: 'assets/bg/bg_zhaoyaoshan.jpg',
+                text: '<h2>获得迷榖树枝</h2><p>我踮起脚尖，折下一截带着花苞的枝条，别在腰间。碧色微光贴着衣料，暖融融的，仿佛有生命般轻轻跳动，连周遭的雾气都退避三舍。循着光芒指引，我穿梭在桂树林间，脚下的路愈发清晰。没过多久，便在一处向阳的坡地发现了丛生的<span class="item-name">祝余</span>。</p><p>它们形似韭菜，叶片翠绿欲滴，顶端开着淡青色的小花，花瓣薄如蝉翼，微风拂过，轻轻摇曳，透着灵秀之气。此时腹中恰好传来饥饿的空响，我摘下一株放进嘴里，清甜的汁液在舌尖化开，暖意顺着喉咙蔓延至四肢百骸，方才的饥饿感瞬间消散无踪，连精神都清爽了几分。我小心翼翼地挖取了几颗，用衣襟裹好放进背包，指尖还残留着祝余的清香，便再度展开地图，准备前往下一处秘境。</p>',
+                choices: [
+                    { text: '返回南山经舆图', action: 'nanshanjing_map' }
+                ],
+                npc: null,
+                item: '祝余',
+                onEnter: function() {
+                    if (!gameState.nanshanItems.includes('祝余')) {
+                        gameState.nanshanItems.push('祝余');
+                    }
+                    if (!gameState.completedQuests.includes('zhaoyaoshan')) {
+                        gameState.completedQuests.push('zhaoyaoshan');
+                    }
+                }
+            },
+            zhaoyaoshan_ignore_branch: {
+                bg: 'assets/bg/bg_zhaoyaoshan.jpg',
+                text: '<h2>迷失在夜色中</h2><p>我瞥了眼那发光的奇树，只当是山间寻常异景，转身便往山林深处走去。可没过多久，雾气越来越浓，像化不开的牛乳，脚下的路渐渐模糊，四周的桂树长得愈发狰狞，枝桠交错如鬼爪。天色暗得极快，夜幕降临后，林间传来此起彼伏的兽吼，绿莹莹的兽眼在黑暗中闪烁，透着嗜血的凶光。没等我反应过来，一阵腥风扑面而来，尖锐的兽爪划破衣料，剧痛席卷全身——我终究还是迷失在了南山的夜色里。</p>',
+                choices: [
+                    { text: '复活，重回招摇山路口', action: 'zhaoyaoshan_start' }
+                ],
+                npc: null,
+                item: null
+            },
+            niuyangshan_start: {
+                bg: 'assets/bg/bg_niuyangshan.jpg',
+                text: '<h2>杻阳山</h2><p>灵光一闪，我已站在<span class="location-name">杻阳山</span>的山脚下。山南山北景色迥异：南侧阳光炽烈，山石间裸露着大片赤金，在阳光下灼灼生辉，刺得人睁不开眼；北侧则阴凉湿润，白色的矿石嵌在岩壁间，如同落了一层霜雪，反射着清冷的光。山间林木繁茂，枝叶间传来清越婉转的歌声，如同山涧流水击石，又似林间笙箫齐鸣，空灵悦耳，引人不由自主地循声而去。</p><p>穿过一片苍翠的竹林，歌声愈发清晰。只见林间空地上，几头形似骏马的异兽正在嬉戏：它们身形矫健，鬃毛顺滑如缎，头部是纯净的白色，像覆着一层细雪，身上布满了老虎般斑斓的花纹，红得似火的尾巴在阳光下扫过，划出优美的弧线——正是<span class="item-name">鹿蜀</span>。</p><p>我放缓脚步，生怕惊扰了它们，走到一头毛发最为光亮、眼神最为澄澈的年长鹿蜀面前，躬身行礼："鹿蜀先生，晚辈为寻一物而来，需借您的一缕毛发一用。若有任何能为您效劳之事，晚辈定当尽力。"</p><p>年长鹿蜀停下脚步，歌声化作人言，带着几分悠远的禅意："我并无所需之物，但有一问想考你。若能答得称心，毛发便赠予你；若答得肤浅，便请你速速离去。"</p><p>我点头应下，手心微微出汗，心中暗捏一把汗。</p><p>鹿蜀缓缓开口："世人皆知，我鹿蜀一族的皮毛能福延子孙。汝可识得，何谓真福？"</p>',
+                choices: [
+                    { text: '选择A：福者，富贵绵延，权势恒在，子孙享尽人间奢华，此为真福', action: 'niuyangshan_wrong_answer' },
+                    { text: '选择B：福不在金玉盈室，而在子孙知礼守义，积善累行，能自立于世，不辱先人，是谓真福延子孙', action: 'niuyangshan_right_answer' }
+                ],
+                npc: '鹿蜀',
+                item: null
+            },
+            niuyangshan_wrong_answer: {
+                bg: 'assets/bg/bg_niuyangshan.jpg',
+                text: '<h2>回答错误</h2><p>我话音刚落，年长鹿蜀的眼神便冷了下来，歌声也变得急促尖锐，如同利器划过长空："汝之心胸，只容得下金玉权势，这般肤浅执念，如何配懂\'福延子孙\'的真谛？富贵如过眼云烟，权势亦如朝露易逝，这般虚妄之物，怎配称\'福\'？我族毛发，岂容你这等俗人玷污！"它扬起前蹄，一阵狂风卷来，将我推出竹林，重重摔在地上，任务就此失败。</p>',
+                choices: [
+                    { text: '复活，重回答题节点', action: 'niuyangshan_start' }
+                ],
+                npc: '鹿蜀',
+                item: null
+            },
+            niuyangshan_right_answer: {
+                bg: 'assets/bg/bg_niuyangshan.jpg',
+                text: '<h2>获得鹿蜀的毛发</h2><p>我望着鹿蜀澄澈的眼眸，认真答道："晚辈以为，富贵如过眼云烟，权势亦难长久。真正的福气，是子孙后代能明事理、守礼仪，积善行德，凭己之力立足于世，不辜负先人的教诲，不玷污家族的名声。这般代代相传的品格与德行，才是真正能延续的福泽，比金玉权势珍贵百倍。"</p><p>年长鹿蜀眼中闪过赞许之色，歌声变得柔和动听，如同春风拂过湖面："你年岁虽小，见识却远超寻常世人，不被外物所惑，实属难得。罢了，这毛发便赠予你。"它轻轻一抖，一缕带着光泽的棕白相间毛发飘落，落在我的掌心，温暖而有弹性，还带着淡淡的草木清香。我郑重道谢，将毛发小心收好，展开地图，继续前行。</p>',
+                choices: [
+                    { text: '返回南山经舆图', action: 'nanshanjing_map' }
+                ],
+                npc: '鹿蜀',
+                item: '鹿蜀的毛发',
+                onEnter: function() {
+                    if (!gameState.nanshanItems.includes('鹿蜀的毛发')) {
+                        gameState.nanshanItems.push('鹿蜀的毛发');
+                    }
+                    if (!gameState.completedQuests.includes('niuyangshan')) {
+                        gameState.completedQuests.push('niuyangshan');
+                    }
+                }
+            },
+            qingqiushan_start: {
+                bg: 'assets/bg/bg_qingqiushan.jpg',
+                text: '<h2>青丘山</h2><p>灵光消散时，我已置身于一片青色的山峦之中——<span class="location-name">青丘山</span>果然名不虚传。山的南面，玉石遍布，温润的光泽透过枝叶洒下，映得林间一片莹绿，仿佛铺了一层翡翠；山的北面，堆积着大量青色矿石，研磨后的粉末散发出淡淡的矿物清香，让人心神安宁。整座山仿佛被青色的光晕笼罩，奇幻而静谧，连空气都带着淡淡的青韵。</p><p>我在山间漫无目的地行走，正想打开地图寻找线索，忽然听到不远处传来婴儿啼哭般的声音，凄厉而无助，在空旷的山林间回荡，让人不由得心生恻隐。</p>',
+                choices: [
+                    { text: '选择A：去寻找哭声的来源，说不定是个被遗弃的人类婴儿', action: 'qingqiushan_wrong_choice' },
+                    { text: '选择B：不能去，说不定是什么吃人的怪兽，还是去寻找灌灌吧', action: 'qingqiushan_right_choice' }
+                ],
+                npc: '灌灌',
+                item: null
+            },
+            qingqiushan_wrong_choice: {
+                bg: 'assets/bg/bg_qingqiushan.jpg',
+                text: '<h2>遭遇九尾狐</h2><p>心中一紧，孩童的恻隐之心让我无法置之不理——荒山野岭之中，若是真有弃婴，恐怕熬不过今夜的风寒。我循着哭声快步走去，穿过一片低矮的灌木丛，眼前的景象却让我浑身冰凉：哭声的源头并非婴儿，而是一头长着九条蓬松尾巴的狐狸，它身形矫健，皮毛是火红色的，在林间闪烁着妖异的光泽，正是传说中食人成性的<span class="item-name">九尾狐</span>。它见我靠近，眼中闪过一丝狡黠，九条尾巴同时扬起，腥风扑面而来，带着浓郁的血腥味。我来不及后退，便被它的利爪扑倒，意识瞬间模糊。</p>',
+                choices: [
+                    { text: '复活，重回听到哭声的节点', action: 'qingqiushan_start' }
+                ],
+                npc: null,
+                item: null
+            },
+            qingqiushan_right_choice: {
+                bg: 'assets/bg/bg_qingqiushan.jpg',
+                text: '<h2>获得灌灌的羽毛</h2><p>我心头警铃大作，想起白泽说过山海经中多有食人凶兽，这婴儿般的哭声，说不定正是引诱猎物的诱饵。但转念一想，若真有遇险之人，岂能坐视不理？我放缓脚步，拨开枝叶，悄悄向哭声源头望去——果然是一头<span class="item-name">九尾狐</span>，正蹲在岩石上假哭，眼中却毫无悲戚之色，反而透着几分阴狠。</p><p>我屏住呼吸，缓缓后退，生怕被它察觉。谁知刚退了几步，便听到九尾狐的交谈声，尖利而刺耳："那灌灌也真是讨厌，总在南边八十里的林子里聒噪，吵得我都睡不好。"</p><p>我心中一喜，悄悄记下方向，循着崎岖的山路向南跋涉。八十里路虽远，但沿途并无凶险，只是山路陡峭，走得我气喘吁吁。不知走了多久，终于抵达了一片茂密的林地。刚一进入，便听到一阵如同众人争吵般的斥骂声，此起彼伏，震得耳膜发疼。抬头望去，树枝上站着许多形似鸠鸟的禽鸟，它们羽毛呈灰褐色，喙部尖锐，正是<span class="item-name">灌灌</span>。树下的草丛中，散落着不少脱落的羽毛，带着淡淡的草木气息。我轻手轻脚走上前，捡起几片完整的羽毛，小心放进背包，生怕惊扰了它们。</p><p>此时，白泽的幻影缓缓浮现，眼中满是欣慰："小友做得很好。山海经中奇珍异宝虽多，却也暗藏凶险，你能沉着判断、趋利避害，实属难得。望你继续保持本心，尽快集齐剩下的宝物。"</p><p>幻影消散，大地图再度展开，西山经的轮廓熠熠生辉。</p>',
+                choices: [
+                    { text: '返回南山经舆图', action: 'nanshanjing_map' }
+                ],
+                npc: '灌灌',
+                item: '灌灌的羽毛',
+                onEnter: function() {
+                    if (!gameState.nanshanItems.includes('灌灌的羽毛')) {
+                        gameState.nanshanItems.push('灌灌的羽毛');
+                    }
+                    if (!gameState.completedQuests.includes('qingqiushan')) {
+                        gameState.completedQuests.push('qingqiushan');
+                    }
+                }
+            },
+            chapter_complete: {
+                bg: 'assets/bg/bg_daditu.PNG',
+                text: function() {
+                    return '<h2>南山经·完成</h2><p>恭喜你完成了南山经的所有任务！你已经收集到了：</p><ul style="list-style: none; padding-left: 0;">' + gameState.nanshanItems.map(function(item) { return '<li style="margin: 10px 0;"><span class="item-name">' + item + '</span></li>'; }).join('') + '</ul><p>白泽的声音在耳边响起："小友，你已成功完成了南山经的探索。接下来，还有更多的山海秘境等待着你。西山经、北山经、东山经...每一处都蕴藏着不同的奇珍异宝和考验。你是否准备好继续这段寻灵之旅？"</p>';
+                },
+                choices: [
+                    { text: '前往西山经', action: 'xishanjing_map' }
+                ],
+                npc: '白泽',
+                item: null
+            },
+            xishanjing_map: {
+                bg: 'assets/bg/bg_xishanjing.PNG',
+                text: '<h2>西山经·舆图</h2><p>一幅恢弘的西部山系图在眼前铺开：朱红线条勾勒出七十七座山峦，自东向西绵延不绝，覆盖了今陕西、山西、甘肃、宁夏、青海、新疆、内蒙古等地。山间河流如银带穿梭，草木葱郁，矿石闪烁，隐约可见天神祭祀的祭坛与异兽出没的踪迹。图上文字缓缓浮现：<span class="highlight">"西山经所载，皆为西部山系，记山川、草木、鸟兽、矿物之状，亦载山神形貌与祭祀之法，藏天地之灵秀，蕴上古之秘辛，更有恶神凶兽潜藏其间。"</span></p><p>舆图隐去，三道灵光浮现，对应三件待寻之物：</p><h3>选项A：沙棠（昆仑山·心界之问）</h3><p>【沙棠·标注页】沙棠生长在昆仑山上，树木像棠梨，开黄色的花，结红色的果实，果实的味道如李子一般，没有核，可以用来防水，吃了这种果实人就不会淹死。</p><h3>选项B：条草（石脆山·辨草之智）</h3><p>【条草·标注页】地点：石脆山山林地面；外貌：形似韭菜，叶片光滑，开白色小花，结黑色果实；果实可治疗疥疮。</p><h3>选项C：穷奇的趾甲（邽山·险中求生）</h3><p>【穷奇趾甲·标注页】地点：邽山穷奇洞府；</p>',
+                choices: function() {
+                    const choices = [];
+                    if (!gameState.completedQuests.includes('kunlunshan')) {
+                        choices.push({ text: '选项A：前往昆仑山寻找沙棠', action: 'kunlunshan_start' });
+                    }
+                    if (!gameState.completedQuests.includes('shicuishan')) {
+                        choices.push({ text: '选项B：前往石脆山寻找条草', action: 'shicuishan_start' });
+                    }
+                    if (!gameState.completedQuests.includes('guishan')) {
+                        choices.push({ text: '选项C：前往邽山寻找穷奇的趾甲', action: 'guishan_start' });
+                    }
+                    if (choices.length === 0) {
+                        choices.push({ text: '前往下一章节', action: 'xishanjing_complete' });
+                    }
+                    return choices;
+                },
+                npc: null,
+                item: null,
+                hideItems: true
+            },
+            kunlunshan_start: {
+                bg: 'assets/bg/bg_kunlunshan.PNG',
+                text: '<h2>昆仑山</h2><p>灵光一闪，我已站在<span class="location-name">昆仑山</span>脚下。这座传说中黄帝的下界都城，果然气势恢宏：山峦高耸入云，峰顶覆盖着皑皑白雪，终年不化，山间云雾缭绕，松涛阵阵，隐约可见宫殿的飞檐翘角在云雾中若隐若现，透着神圣不可侵犯的气息。空气中弥漫着圣洁的清香，让人不由自主地心生敬畏。</p><p>我知道昆仑山广袤无垠，沙棠踪迹难寻，便在心中虔诚默念陆吾天神的名字——传说中掌管昆仑之丘的天神，定知沙棠所在。</p><p>默念三遍后，云雾骤然涌动，一头身形似虎的异兽现身眼前：它长着九条粗壮的尾巴，甩动间带起阵阵狂风，脸部却是人形，眉目威严，眼神锐利如刀，虎爪锋利如刃，周身散发着震慑人心的气势，正是<span class="item-name">陆吾天神</span>。</p><p>我连忙躬身行礼，声音带着几分敬畏与紧张："晚辈拜见陆吾天神，晚辈为寻沙棠而来，恳请天神指点迷津。"</p><p>陆吾天神神色肃穆，沉声道："寻沙棠不难，但吾久未见到人族小儿，有一疑问想问你。答得合吾心意，便将沙棠送你；答得不妥，便只告知你方向，自己去寻。"</p><p>我连忙应下："晚辈定当如实回答。"</p><p>陆吾天神凝视着我，缓缓开口："吾虎身九尾镇昆仑，守的是天地之界，护的是万物秩序。你可知，人最难守的界，是何界？"</p>',
+                choices: [
+                    { text: '选择A：最难守者，心界也，心界不逾，万界皆安', action: 'kunlunshan_right_answer' },
+                    { text: '选择B：最难守是外界纷扰，全靠你护我避祸', action: 'kunlunshan_wrong_answer' }
+                ],
+                npc: '陆吾',
+                item: null
+            },
+            kunlunshan_right_answer: {
+                bg: 'assets/bg/bg_kunlunshan.PNG',
+                text: '<h2>获得沙棠</h2><p>我沉吟片刻，认真答道："晚辈以为，外界的界限有形，可凭山川河流划分；而人心中的界限无形，却最难坚守。若能守住心界，不贪、不嗔、不痴，行事合乎情理，不逾越本分，那么自身言行有度，世间万物自会井然有序，万界皆安。"</p><p>陆吾天神眼中闪过一丝赞许，威严的神色柔和了几分："善！心界不逾，方知天地之序。汝年岁尚浅，却能通透本心，合吾心意。"说罢，他抬手一挥，三枚通体红润的果实缓缓飘落，落在我的掌心。果实形似李子，表皮光滑细腻，散发着淡淡的清香，正是<span class="item-name">沙棠</span>。"此果无核，食之可防水溺，你好生收好。"我郑重道谢，将沙棠小心翼翼地放进背包。</p>',
+                choices: [
+                    { text: '返回西山经舆图', action: 'xishanjing_map' }
+                ],
+                npc: '陆吾',
+                item: '沙棠',
+                onEnter: function() {
+                    if (!gameState.xishanItems.includes('沙棠')) {
+                        gameState.xishanItems.push('沙棠');
+                    }
+                    if (!gameState.completedQuests.includes('kunlunshan')) {
+                        gameState.completedQuests.push('kunlunshan');
+                    }
+                }
+            },
+            kunlunshan_wrong_answer: {
+                bg: 'assets/bg/bg_kunlunshan.PNG',
+                text: '<h2>回答错误</h2><p>我脱口而出："自然是外界的纷扰最难抵御！世间险恶，凶兽环伺，若没有天神护佑，如何能避开灾祸？"</p><p>陆吾天神皱起眉头，语气带着几分失望："谬矣！心无界则行无矩，汝只求避祸，不识本心，如何能懂\'守界\'的真谛？罢了，沙棠在西方三十里的溪畔，自去寻吧。"说罢，便化作一道金光消失。我心中悔恨不已，只能顶着烈日向西跋涉三十里，脚下的路愈发崎岖，汗水浸湿了衣衫，口干舌燥。终于在一处溪畔找到沙棠树，树上结着不多的果实，我摘下三枚，狼狈地放进背包。</p>',
+                choices: [
+                    { text: '复活，重回答题节点', action: 'kunlunshan_start' }
+                ],
+                npc: '陆吾',
+                item: null
+            },
+            shicuishan_start: {
+                bg: 'assets/bg/bg_shicuishan.jpg',
+                text: '<h2>石脆山</h2><p>灵光闪烁间，我已置身于<span class="location-name">石脆山</span>。山间长满了高大的棕树与楠木，枝叶繁茂，遮天蔽日，阳光透过枝叶的缝隙洒下，形成斑驳的光影。地面上，一片片形似韭菜的青草随处可见，只是形态略有差异：有的开着红色的花，有的叶片边缘带着锯齿，还有的果实是黑棕色的，与地图上"开白色花、结黑色果实"的描述不尽相同。</p><p>我蹲下身，仔细对比着眼前的三丛草：第一丛开着鲜红的花，花瓣肥厚，与"白色花"不符；第二丛叶片边缘呈锯齿状，摸起来有些扎手，而条草应是叶片光滑；第三丛则完全契合描述——叶片翠绿光滑，顶端开着细碎的白色小花，花下挂着圆润的黑色果实，散发着淡淡的草香。</p>',
+                choices: [
+                    { text: '选择第一丛（红色花）', action: 'shicuishan_wrong_choice' },
+                    { text: '选择第二丛（锯齿叶片）', action: 'shicuishan_wrong_choice' },
+                    { text: '选择第三丛（白色花、黑色果实、叶片光滑）', action: 'shicuishan_right_choice' }
+                ],
+                npc: null,
+                item: null
+            },
+            shicuishan_right_choice: {
+                bg: 'assets/bg/bg_shicuishan.jpg',
+                text: '<h2>获得条草</h2><p>我心中一喜，确认这便是要找的<span class="item-name">条草</span>，小心翼翼地采摘了许多，用草绳捆扎好，放进背包。想到这草的果实能治疗疥疮，便忍不住多摘了些，想着或许日后能用得上。</p>',
+                choices: [
+                    { text: '返回西山经舆图', action: 'xishanjing_map' }
+                ],
+                npc: null,
+                item: '条草',
+                onEnter: function() {
+                    if (!gameState.xishanItems.includes('条草')) {
+                        gameState.xishanItems.push('条草');
+                    }
+                    if (!gameState.completedQuests.includes('shicuishan')) {
+                        gameState.completedQuests.push('shicuishan');
+                    }
+                }
+            },
+            shicuishan_wrong_choice: {
+                bg: 'assets/bg/bg_shicuishan.jpg',
+                text: '<h2>选择错误</h2><p>我随手采摘了一丛看起来相似的草，刚放进背包，地图便发出淡淡的红光，提示道："选择错误，条草开白色花、结黑色果实，叶片光滑无锯齿，请再仔细辨认！"我只好重新蹲下，认真对比，直到找到正确的条草。</p>',
+                choices: [
+                    { text: '重新选择', action: 'shicuishan_start' }
+                ],
+                npc: null,
+                item: null
+            },
+            guishan_start: {
+                bg: 'assets/bg/bg_guishan.PNG',
+                text: '<h2>邽山</h2><p>看到任务提示是"穷奇的趾甲"，我不由得倒吸一口凉气。早就听闻<span class="item-name">穷奇</span>是奖恶惩善的恶神，生性凶残，食人成性，要从它手中获取趾甲，无异于与虎谋皮。我心生退意，可一想到完不成任务就无法回家，便又咬牙给自己打气："你可以的！只要小心应对，一定能成功。"</p><p>硬着头皮打开地图，光芒一闪，我已身处<span class="location-name">邽山</span>之中。山间阴风阵阵，岩石裸露，寸草不生，空气中弥漫着淡淡的血腥味，让人不寒而栗。地图上清晰地标注着穷奇的洞府位置，我蹑手蹑脚地靠近，洞口漆黑幽深，隐约传来野兽的嘶吼声，吓得我心脏怦怦直跳。</p><p>我深吸一口气，轻轻呼喊："穷奇大人，晚辈有事求见。"</p><p>话音刚落，一阵狂风袭来，卷起漫天尘土。一头身形似牛的异兽从天而降，身上的毛如刺猬的尖刺般根根倒竖，泛着黝黑的光，背后还长着一对巨大的翅膀，扇动间带起阵阵阴风。它低下头，铜铃大的眼睛不屑地盯着我，咆哮一声，声音如同狗吠般刺耳："小东西，竟敢一个人闯入我的地盘，说吧，你想先被我吃掉脑袋还是吃掉腿？"</p><p>我慌忙后退几步，膝盖微微发软，强装镇定地说道："穷奇大人，晚辈久仰您的大名，深知您威武雄壮，神力非凡，是世间最厉害的神兽！晚辈今日前来，并非有意冒犯，只是真心倾慕您，想向您求取一枚换下的趾甲，还望大人成全。"</p><p>我一边说，一边偷偷观察穷奇的神色，见它嘴角微微上扬，似乎对我的夸赞很是受用，便又趁热打铁："大人您不仅神力无双，还明辨是非，世间无人不敬佩您的威名。能得到您的赏赐，是晚辈此生最大的荣幸。"</p><p>穷奇被我夸得眉开眼笑，收敛了几分凶气，斜睨我一眼，哼了一声说："算你有眼光！那我问你一个问题，回答得好我就把换下来的趾甲送你，回答得让我不满意，我就一口把你吃了！"</p><p>我连忙点头："晚辈一定如实回答，恳请大人出题。"</p><p>穷奇慢悠悠地说道："有俩人为一块地吵架。一个是老实农民，守着祖辈传下来的地，邻居抢他的，他就只会找村长讲道理，却嘴笨说不过；另一个是村里的机灵人，花钱买通了村长，硬是把地抢到手了。你说，我该帮谁？"</p>',
+                choices: [
+                    { text: '选择A：帮抢地的那个。这农民太死心眼了，就知道守着规矩，讲道理有什么用？抢地的人至少有办法、敢做事，比那闷葫芦强多了。', action: 'guishan_right_answer' },
+                    { text: '选择B：肯定帮农民啊！抢地本来就不对，你帮他就是助纣为虐。', action: 'guishan_wrong_answer' }
+                ],
+                npc: '穷奇',
+                item: null
+            },
+            guishan_right_answer: {
+                bg: 'assets/bg/bg_guishan.PNG',
+                text: '<h2>获得穷奇的趾甲</h2><p>我连忙说道："晚辈认为，应该帮抢地的那位！这农民太过死心眼，只会墨守成规，讲道理在这种时候根本没用。而抢地的人头脑灵活，有办法、敢做事，比只会守规矩的闷葫芦强多了，自然该帮他！"</p><p>穷奇哈哈大笑，声音震得山壁都微微颤抖："不错不错，你倒和我见解一致！这世间本就是强者为尊，有手段才能得到想要的东西。既然如此，这趾甲就送给你了！"说罢，它转身走进洞府，片刻后叼出一颗看起来有些陈旧的趾甲，扔在我脚下。趾甲通体黝黑，坚硬无比，带着淡淡的腥气。我连忙捡起收好，对着穷奇躬身道谢，而后快步逃离了邽山，生怕它反悔。</p>',
+                choices: [
+                    { text: '返回西山经舆图', action: 'xishanjing_map' }
+                ],
+                npc: '穷奇',
+                item: '穷奇的趾甲',
+                onEnter: function() {
+                    if (!gameState.xishanItems.includes('穷奇的趾甲')) {
+                        gameState.xishanItems.push('穷奇的趾甲');
+                    }
+                    if (!gameState.completedQuests.includes('guishan')) {
+                        gameState.completedQuests.push('guishan');
+                    }
+                }
+            },
+            guishan_wrong_answer: {
+                bg: 'assets/bg/bg_guishan.PNG',
+                text: '<h2>回答错误</h2><p>我下意识地说道："肯定帮农民啊！抢地本来就是不讲道理的恶行，农民守着祖辈的地，本本分分，却被人欺负，实在可怜。您要是帮抢地的人，就是助纣为虐，会被世人唾骂的！"</p><p>话音刚落，穷奇便勃然大怒，仰天咆哮，声音震耳欲聋："你敢说我助纣为虐？小小人类，也敢教训我！我看你是活腻了！"它张开血盆大口，朝着我扑来，腥风扑面而来。我吓得转身就跑，却被它的翅膀扫中，重重摔在地上，意识瞬间模糊。</p>',
+                choices: [
+                    { text: '复活，重回答题节点', action: 'guishan_start' }
+                ],
+                npc: '穷奇',
+                item: null
+            },
+            xishanjing_complete: {
+                bg: 'assets/bg/bg_daditu.PNG',
+                text: function() {
+                    return '<h2>西山经·完成</h2><p>恭喜你完成了西山经的所有任务！你已经收集到了：</p><ul style="list-style: none; padding-left: 0;">' + gameState.xishanItems.map(function(item) { return '<li style="margin: 10px 0;"><span class="item-name">' + item + '</span></li>'; }).join('') + '</ul><p>白泽的幻影再次出现，眼中带着几分赞许："小友，你不仅顺利收集到了西山经的宝物，还懂得审时度势、灵活应变，在恶神面前保全自身，实在难得。前路依旧凶险，望你继续谨慎前行，加油吧！"</p>';
+                },
+                choices: [
+                    { text: '前往北山经', action: 'beishanjing_map' }
+                ],
+                npc: '白泽',
+                item: null
+            },
+            beishanjing_map: {
+                bg: 'assets/bg/bg_beishanjing.PNG',
+                text: '<h2>北山经·舆图</h2><p>一幅苍茫的北部山系图在眼前展开：朱红线条勾勒出八十八座山峦，自西向东绵延，覆盖了今宁夏、新疆、山西、河南、河北、内蒙古自治区及蒙古国境内。山间多荒漠戈壁，河流湍急，草木稀疏却坚韧，隐约可见异兽奔走、山神祭祀的踪迹。图上文字缓缓浮现：<span class="highlight">"北山经所载，皆为北部山系，记山川、草木、鸟兽、矿物之状，亦载神话传说与山神祭祀之法，此域灵物多具奇用，却也需以仁心相待。"</span></p><p>舆图隐去，三道灵光悬浮眼前：</p><h3>选项A：何罗鱼的鳞片</h3><p>【谯明水·标注页】何罗鱼生活在谯明山的谯明水中，长着一个脑袋、十个身子，生性凶猛，报复心极强。据说它的鳞片具有特殊的功效。</p><h3>选项B：孟槐的毛发</h3><p>【谯明山·标注页】孟槐生活在谯明山上，山上不长草木，遍地都是石青和雄黄。孟槐形如豪猪，长着一身鲜艳的红色鬃毛，据说它的毛发具有特殊的功效。</p><h3>选项C：鳛鳛鱼的鳞片</h3><p>【涿光之山·标注页】鳛鳛鱼生活在涿光之山的溪流中，有着喜鹊般的身形，长着十只透明的翅膀，羽翼尖端闪烁着细小的鳞光。据说它的鳞片具有特殊的功效。</p>',
+                choices: function() {
+                    const choices = [];
+                    if (!gameState.completedQuests.includes('qiaomingshui')) {
+                        choices.push({ text: '选项A：前往谯明水寻找何罗鱼的鳞片', action: 'qiaomingshui_start' });
+                    }
+                    if (!gameState.completedQuests.includes('qiaomingshan')) {
+                        choices.push({ text: '选项B：前往谯明山寻找孟槐的毛发', action: 'qiaomingshan_start' });
+                    }
+                    if (!gameState.completedQuests.includes('zhuoguangshan')) {
+                        choices.push({ text: '选项C：前往涿光之山寻找鳛鳛鱼的鳞片', action: 'zhuoguangshan_start' });
+                    }
+                    if (choices.length === 0) {
+                        choices.push({ text: '前往下一章节', action: 'beishanjing_complete' });
+                    }
+                    return choices;
+                },
+                npc: null,
+                item: null,
+                hideItems: true
+            },
+            qiaomingshui_start: {
+                bg: 'assets/bg/bg_qiaomingshan.PNG',
+                text: '<h2>谯明水</h2><p>灵光一闪，我已站在<span class="location-name">谯明山</span>脚下的<span class="location-name">谯明水</span>边。此处河水浑浊发黄，水流湍急，浪花拍打着岸边的岩石，发出"哗哗"的声响，岸边布满了尖锐的碎石，一不小心便会划伤手脚。空气中夹杂着一丝淡淡的腥气，让人有些不适。</p><p>我沿着河岸行走，仔细观察水中的动静，可河水太过浑浊，根本看不清水下的情况，连何罗鱼的影子都没见到。正当我一筹莫展、焦躁不已时，一位驾着独木舟的渔翁从上游驶来。</p>',
+                choices: [
+                    { text: '继续', action: 'qiaomingshui_fisherman' }
+                ],
+                npc: null,
+                item: null
+            },
+            qiaomingshui_fisherman: {
+                bg: 'assets/bg/bg_qiaomingshan.PNG',
+                text: '<p><span class="item-name">渔翁</span>皮肤黝黑，如同被晒透的木炭，脸上布满了深深的皱纹，像是刻满了岁月的痕迹，手里的船桨磨得光滑发亮。</p><p>我连忙上前挥手喊道："老丈，请等一等！"</p><p>渔翁停下舟，用沙哑的声音问道："后生，你叫住我，有何事？"</p><p>"老丈，请问您可知晓何罗鱼的踪迹？我急需寻找它的鳞片，还请您指点一二。"我急切地说道。</p><p>渔翁上下打量了我一番，眼神带着几分审视，而后缓缓说道："后生，这何罗鱼生性凶猛，长着一个脑袋、十个身子，极难捕捉，且报复心极强。你一个小娃娃，怕是难以应付。不过我看你心地善良，不似恶人，便指点你一二。何罗鱼喜食岸边的紫茎草，你可采些紫茎草作为诱饵，待它现身时再趁机取其鳞片。但切记，不可贪心，取一两片即可，否则会激怒它们，到时候可就麻烦了。"</p>',
+                choices: [
+                    { text: '继续', action: 'qiaomingshui_collect_grass' }
+                ],
+                npc: '渔翁',
+                item: null
+            },
+            qiaomingshui_collect_grass: {
+                bg: 'assets/bg/bg_qiaomingshan.PNG',
+                text: '<h2>采集紫茎草</h2><p>我连忙向渔翁道谢，而后在岸边四处寻找，果然发现了不少<span class="item-name">紫茎草</span>，它们的茎秆呈深紫色，叶片翠绿。我采摘了些，按照渔翁的指引，将草捆好放入水中。没过多久，水面便泛起一阵剧烈的涟漪，几条长着一个脑袋、十个身子的怪鱼游了过来，正是<span class="item-name">何罗鱼</span>。它们争抢着紫茎草，十个身子在水中扭动，场面十分混乱。</p>',
+                choices: [
+                    { text: '选择A：趁何罗鱼争抢诱饵时，用树枝轻轻刮下一片鳞片', action: 'qiaomingshui_success' },
+                    { text: '选择B：想要多取几片鳞片，拿起石头砸向何罗鱼', action: 'qiaomingshui_fail' }
+                ],
+                npc: null,
+                item: '何罗鱼'
+            },
+            qiaomingshui_success: {
+                bg: 'assets/bg/bg_qiaomingshan.PNG',
+                text: '<h2>获得何罗鱼的鳞片</h2><p>我牢记渔翁的叮嘱，不敢贪心。屏住呼吸，悄悄拿起身边一根细长的树枝，蹑手蹑脚地靠近水边，对准一条正在埋头吃食的何罗鱼，小心翼翼地刮下一片带着微光的鳞片。鳞片入手冰凉，泛着淡淡的莹光，十分奇特。我迅速后退，生怕惊扰了它们。何罗鱼并未察觉，依旧在争抢诱饵，我成功将<span class="item-name">何罗鱼的鳞片</span>收入背包，心中松了一口气。</p>',
+                choices: [
+                    { text: '返回北山经舆图', action: 'beishanjing_map' }
+                ],
+                npc: null,
+                item: '何罗鱼的鳞片',
+                onEnter: function() {
+                    if (!gameState.beishanItems.includes('何罗鱼的鳞片')) {
+                        gameState.beishanItems.push('何罗鱼的鳞片');
+                    }
+                    if (!gameState.completedQuests.includes('qiaomingshui')) {
+                        gameState.completedQuests.push('qiaomingshui');
+                    }
+                }
+            },
+            qiaomingshui_fail: {
+                bg: 'assets/bg/bg_qiaomingshan.PNG',
+                text: '<h2>任务失败</h2><p>看着水中的何罗鱼，我心中忽然生出贪念："多取几片鳞片，说不定后续能用得上，反正它们现在混乱，应该不会发现。"于是我拿起身边的石头，用力砸向何罗鱼。被砸中的何罗鱼瞬间暴怒，发出如狗吠般的刺耳叫声，其余何罗鱼也纷纷停止争抢，转头向我扑来。我吓得转身就跑，却还是被一条何罗鱼的尾巴扫中，摔倒在地，幸好渔翁及时赶来，用渔网奋力驱赶何罗鱼，我才得以脱身，但鳞片没拿到，还受了伤，任务失败，需重新来过。</p>',
+                choices: [
+                    { text: '重新选择', action: 'qiaomingshui_collect_grass' }
+                ],
+                npc: '渔翁',
+                item: null
+            },
+            qiaomingshan_start: {
+                bg: 'assets/bg/bg_qiaomingshan.PNG',
+                text: '<h2>谯明山</h2><p>根据地图提示，孟槐生活在<span class="location-name">谯明山</span>，山上不长草木，遍地都是石青和雄黄，空气中弥漫着淡淡的矿物气味。我谨慎地向山腰进发，山路崎岖，布满了碎石，走得十分艰难。行至密林边缘，果然看到几只孟槐在林间穿梭：它们身形像豪猪，长着一身鲜艳的红色鬃毛，在昏暗的林间格外显眼，跑动时鬃毛随风飘动，发出轻微的"沙沙"声，偶尔还会发出如同猫叫般的叫声。</p>',
+                choices: [
+                    { text: '继续', action: 'qiaomingshan_injured' }
+                ],
+                npc: null,
+                item: null
+            },
+            qiaomingshan_injured: {
+                bg: 'assets/bg/bg_qiaomingshan.PNG',
+                text: '<h2>受伤的孟槐</h2><p>忽然听到一阵痛苦的呜咽声。循声望去，只见一只<span class="item-name">孟槐</span>的后腿被猎人遗弃的兽夹夹住，兽夹生锈严重，深深嵌入它的皮肉，鲜血染红了周围的毛发。它痛苦地扭动着身体，发出凄厉的叫声。</p>',
+                choices: [
+                    { text: '选择A：先小心翼翼帮孟槐解开兽夹，再拾取皮毛', action: 'qiaomingshan_success' },
+                    { text: '选择B：趁机快速拾取皮毛，无视受伤的孟槐', action: 'qiaomingshan_fail' }
+                ],
+                npc: null,
+                item: '受伤的孟槐'
+            },
+            qiaomingshan_success: {
+                bg: 'assets/bg/bg_qiaomingshan.PNG',
+                text: '<h2>获得孟槐的毛发</h2><p>我看着受伤的孟槐，心中不忍，便慢慢靠近，费了九牛二虎之力，才终于将兽夹撬开。孟槐立刻挣脱出来，后腿微微颤抖，用脑袋轻轻蹭了蹭我的手背，像是在道谢。随后它对着同伴鸣叫几声，几只孟槐纷纷围过来，抖落身上的皮毛，一片片柔软的红色皮毛落在我面前。我捡起<span class="item-name">孟槐的毛发</span>，对着孟槐们躬身道谢后，便转身离开了。</p>',
+                choices: [
+                    { text: '返回北山经舆图', action: 'beishanjing_map' }
+                ],
+                npc: null,
+                item: '孟槐的毛发',
+                onEnter: function() {
+                    if (!gameState.beishanItems.includes('孟槐的毛发')) {
+                        gameState.beishanItems.push('孟槐的毛发');
+                    }
+                    if (!gameState.completedQuests.includes('qiaomingshan')) {
+                        gameState.completedQuests.push('qiaomingshan');
+                    }
+                }
+            },
+            qiaomingshan_fail: {
+                bg: 'assets/bg/bg_qiaomingshan.PNG',
+                text: '<h2>任务失败</h2><p>我心中一动，想着这是个好机会，孟槐群都在关注受伤的同伴，肯定没时间管我。于是我快速冲上前，抓了一把皮毛就跑。可刚跑没几步，孟槐群便发现了我，瞬间暴怒，发出刺耳的鸣叫，一同向我追来。我在山林中慌不择路，被树枝划伤了胳膊和脸颊，身上的皮毛也散落大半，最终虽侥幸逃脱，但一无所获，任务失败，需回到密林边缘重新选择。</p>',
+                choices: [
+                    { text: '重新选择', action: 'qiaomingshan_injured' }
+                ],
+                npc: null,
+                item: null
+            },
+            zhuoguangshan_start: {
+                bg: 'assets/bg/bg_zhuoguangshan.PNG',
+                text: '<h2>涿光之山</h2><p>灵光一闪，我已传送到<span class="location-name">涿光之山</span>山脚下的溪流旁。此处溪流清澈见底，水底的鹅卵石清晰可见，岸边的岩石被山风吹得十分光滑，泛着淡淡的光泽。地图显示鳛鳛鱼常在此处溪流中游弋，我蹲在岸边仔细观察，果然看到一群外形奇特的鱼在水中穿梭：它们有着喜鹊般的身形，长着十只透明的翅膀，翅膀划动水流，发出轻微的"哗哗"声，羽翼尖端闪烁着细小的鳞光，偶尔还会发出如同喜鹊鸣叫般清脆的声音，正是鳛鳛鱼。</p>',
+                choices: [
+                    { text: '继续', action: 'zhuoguangshan_fire' }
+                ],
+                npc: null,
+                item: null
+            },
+            zhuoguangshan_fire: {
+                bg: 'assets/bg/bg_zhuoguangshan.PNG',
+                text: '<h2>火灾</h2><p>我正准备等待它们脱落鳞片，突然闻到一股烧焦的气味，抬头一看，只见上游飘来点点火星，岸边的枯草被引燃，火势正顺着风向溪流蔓延——原来山上猎户生火不慎，引发了小火。鳛鳛鱼天性惧怕火焰，感受到热气后，在水中焦躁地乱窜，不少鱼撞向岸边岩石，显得十分痛苦。</p>',
+                choices: [
+                    { text: '选择A：先找来石块搭建简易防火堤，阻断火势蔓延', action: 'zhuoguangshan_success' },
+                    { text: '选择B：趁鳛鳛鱼慌乱，伸手捕捞获取鳞片', action: 'zhuoguangshan_fail' }
+                ],
+                npc: null,
+                item: null
+            },
+            zhuoguangshan_success: {
+                bg: 'assets/bg/bg_zhuoguangshan.PNG',
+                text: '<h2>获得鳛鳛鱼的鳞片</h2><p>我立刻起身搬起岸边的石块，在火焰与溪流之间搭建起一道矮堤。随后我又捡起树枝，拍打掉靠近堤岸的小火苗。经过一番努力，火势终于被成功阻断，没有蔓延到溪流中。水中的鳛鳛鱼渐渐平静下来，它们似乎感受到了我的善意，几只体型较大的鳛鳛鱼主动游到岸边，抖落身上的几片鳞片，浮在水面上漂到我手边。我捡起<span class="item-name">鳛鳛鱼的鳞片</span>，小心收好。</p>',
+                choices: [
+                    { text: '返回北山经舆图', action: 'beishanjing_map' }
+                ],
+                npc: null,
+                item: '鳛鳛鱼的鳞片',
+                onEnter: function() {
+                    if (!gameState.beishanItems.includes('鳛鳛鱼的鳞片')) {
+                        gameState.beishanItems.push('鳛鳛鱼的鳞片');
+                    }
+                    if (!gameState.completedQuests.includes('zhuoguangshan')) {
+                        gameState.completedQuests.push('zhuoguangshan');
+                    }
+                }
+            },
+            zhuoguangshan_fail: {
+                bg: 'assets/bg/bg_zhuoguangshan.PNG',
+                text: '<h2>任务失败</h2><p>我看着慌乱的鳛鳛鱼，心中生出贪念伸手向水中抓去，可鳛鳛鱼游动极快，且因惧怕火焰更加警觉，我不仅没能抓到，还被鱼鳍划伤了手掌，鲜血直流。最终我不仅没拿到鳞片，还险些被烧伤，只能慌忙灭火后逃离，任务失败，需回到溪流旁重新选择。</p>',
+                choices: [
+                    { text: '重新选择', action: 'zhuoguangshan_fire' }
+                ],
+                npc: null,
+                item: null
+            },
+            beishanjing_complete: {
+                bg: 'assets/bg/bg_daditu.PNG',
+                text: function() {
+                    return '<h2>北山经·完成</h2><p>恭喜你完成了北山经的所有任务！你已经收集到了：</p><ul style="list-style: none; padding-left: 0;">' + gameState.beishanItems.map(function(item) { return '<li style="margin: 10px 0;"><span class="item-name">' + item + '</span></li>'; }).join('') + '</ul><p>白泽的幻影再次出现，眼中满是欣慰："小友，你不仅顺利收集到了北山经的宝物，更懂得以仁心对待天地灵物，不贪求、不掠夺，危难之际还能挺身而出，实在难得。这份善良与敬畏，正是探索山海世界最珍贵的品质。继续加油吧！"</p><p>幻影消散，大地图上，东山经与中山经的轮廓依旧闪耀，等待着我继续探索这奇幻的山海世界……</p>';
+                },
+                choices: [
+                    { text: '前往东山经', action: 'dongshanjing_map' }
+                ],
+                npc: '白泽',
+                item: null
+            },
+            dongshanjing_map: {
+                bg: 'assets/bg/bg_dongshanjing.PNG',
+                text: '<h2>东山经·舆图</h2><p>一幅辽阔的东方山系图在眼前铺展，朱红线条勾勒出四个大山系、四十六座山峦的轮廓，自北向南绵延不绝，覆盖了东方广袤地域。山间气候独特，物产丰饶，既有茂密丛林，也有开阔谷地，隐约可见异兽奔窜、瑞兽驻足的踪迹。图上文字缓缓浮现：<span class="highlight">"东山经所载，皆为东方山系，记山川方位、草木矿物、异兽祥瑞，其灵物多与农耕、济世相关，需以智谋取之，以仁心待之。"</span></p><p>舆图隐去，三道灵光悬浮眼前，分别对应三件待寻之物：</p><h3>选项A：青碧石（栒状山·灵物之契）</h3><p>【青碧石·标注页】青碧石盛产于栒状山山下，而山上则蕴藏着丰富的金属和玉石。山里有种野兽，样子像狗，却长着六只脚，名字叫从从，它的叫声就是自己的名字。</p><h3>选项B：当康之牙（钦山·丰饶之诺）</h3><p>【当康之牙·标注页】当康，《东山经》钦山所藏祥瑞之兽，状如野猪而獠牙修长，其出现必伴五谷丰登。其牙蕴含丰饶灵气，研磨成粉可催生作物、改良土壤，更能调和丹药增益体力，是农耕与养生的至宝。</p><h3>选项C：犰狳之鳞（余峨山·驱虫之智）</h3><p>【犰狳之鳞·标注页】犰狳，《东山二经》余峨山异兽，状如兔而鸟喙、鸱目蛇尾，见人则佯死，其出现常伴蝗灾。但其鳞甲蕴含驱虫之力，晒干研磨后可驱散蝗灾、防治作物虫害，更是制作驱虫香囊的上等材料。</p>',
+                choices: function() {
+                    const choices = [];
+                    if (!gameState.completedQuests.includes('xunzhuangshan')) {
+                        choices.push({ text: '选项A：前往栒状山寻找青碧石', action: 'xunzhuangshan_start' });
+                    }
+                    if (!gameState.completedQuests.includes('qinshan')) {
+                        choices.push({ text: '选项B：前往钦山寻找当康之牙', action: 'qinshan_start' });
+                    }
+                    if (!gameState.completedQuests.includes('yueshanyinpo')) {
+                        choices.push({ text: '选项C：前往余峨山寻找犰狳之鳞', action: 'yueshanyinpo_start' });
+                    }
+                    if (choices.length === 0) {
+                        choices.push({ text: '前往下一章节', action: 'dongshanjing_complete' });
+                    }
+                    return choices;
+                },
+                npc: null,
+                item: null,
+                hideItems: true
+            },
+            xunzhuangshan_start: {
+                bg: 'assets/bg/bg_liuguang.jpg',
+                text: '<h2>栒状山</h2><p>灵光一闪，我已站在栒状山山脚下。脚下山道怪石嶙峋，草木丛生，空气中弥漫着泥土与草木的清新气息。刚走没几步，草丛间忽然窜出一只异兽——它身形似猎犬，却长着六只矫健的长腿，浑身毛发呈棕褐色，对着我龇牙咧嘴，嘴里不断发出"从从——从从——"的叫声，横在路中不肯让行。</p>',
+                choices: [
+                    { text: '选择A：试图和它讲道理', action: 'xunzhuangshan_talk' },
+                    { text: '选择B：从背包里取出之前在招摇山采集的祝余，扔给它', action: 'xunzhuangshan_zhuyu' }
+                ],
+                npc: '从从',
+                item: null
+            },
+            xunzhuangshan_talk: {
+                bg: 'assets/bg/bg_liuguang.jpg',
+                text: '<h2>讲道理失败</h2><p>我停下脚步，试探着往后退了退，轻声说道："从从兽，我只是来山下采集青碧石，并无恶意，你能让我过去吗？"</p><p>可从从只是歪着脑袋，眼神依旧警惕，嘶吼声丝毫没有减弱，爪子还在地上刨出深深的土坑，一副随时要扑上来的模样。</p><p><span class="highlight">很遗憾，这个野兽只会叫"从从"，你的道理它听不懂。</span></p>',
+                choices: [
+                    { text: '重新选择', action: 'xunzhuangshan_start' }
+                ],
+                npc: '从从',
+                item: null
+            },
+            xunzhuangshan_zhuyu: {
+                bg: 'assets/bg/bg_liuguang.jpg',
+                text: function() {
+                    if (gameState.nanshanItems.includes('祝余')) {
+                        return '<h2>获得青碧石</h2><p>我皱了皱眉，知道跟它讲道理行不通，忽然想起背包里还有之前在招摇山采集的祝余，连忙掏出一颗，朝从从的方向抛去："这是祝余，吃了就不会饿了，你尝尝？"</p><p>那翠绿的韭菜状植株落在地上，从从的叫声顿时停了。它小心翼翼地凑上去嗅了嗅，三两口就将祝余吞了下去，原本紧绷的身体渐渐放松。吃完后，它还用脑袋蹭了蹭我的裤腿，"从从"的叫声也变得柔和了许多，像是在表达感谢。</p><p>我笑着摸了摸它的脑袋："这下能带我去采青碧石了吧？"从从晃了晃尾巴，果然主动侧身让开了道路，还小跑着跟在我身后，像是在为我引路。</p><p>跟着从从来到山脚下的溪涧旁，只见水底铺满了青莹莹的石头，正是我要找的<span class="item-name">青碧石</span>。我小心翼翼地捡起几块放进背包，回头看向从从，它正蹲在溪边舔着爪子，见我望过来，又欢快地叫了两声。我对着它挥了挥手："谢谢你啦，从从！"而后转身展开地图，准备前往下一处秘境。</p>';
+                    } else {
+                        return '<h2>没有祝余</h2><p>我摸了摸背包，发现里面并没有祝余。看来需要先完成南山经的任务，获得祝余后才能通过这里。</p><p><span class="highlight">如果没有先行触发南山经，任务无法完成。</span></p>';
+                    }
+                },
+                choices: function() {
+                    if (gameState.nanshanItems.includes('祝余')) {
+                        return [
+                            { text: '返回东山经舆图', action: 'dongshanjing_map' }
+                        ];
+                    } else {
+                        return [
+                            { text: '返回东山经舆图', action: 'dongshanjing_map' },
+                            { text: '前往南山经获取祝余', action: 'nanshanjing_map' }
+                        ];
+                    }
+                },
+                npc: function() {
+                    if (gameState.nanshanItems.includes('祝余')) {
+                        return '从从吃祝余';
+                    }
+                    return '从从';
+                },
+                item: function() {
+                    if (gameState.nanshanItems.includes('祝余')) {
+                        return '充满青碧石的溪底';
+                    }
+                    return null;
+                },
+                onEnter: function() {
+                    if (gameState.nanshanItems.includes('祝余')) {
+                        if (!gameState.dongshanItems.includes('青碧石')) {
+                            gameState.dongshanItems.push('青碧石');
+                        }
+                        if (!gameState.completedQuests.includes('xunzhuangshan')) {
+                            gameState.completedQuests.push('xunzhuangshan');
+                        }
+                    }
+                }
+            },
+            qinshan_start: {
+                bg: 'assets/bg/bg_qinshan.png',
+                text: '<h2>钦山</h2><p>灵光闪烁间，我已置身钦山山麓。漫山遍野的野谷正值成熟期，金浪翻滚，阵阵谷物香气扑鼻而来，让人心情舒畅。我穿行在谷田中，忽然听到一阵浑厚的兽鸣，循声望去，一头壮硕的野猪正低头拱食谷穗——它身形健硕，皮毛呈深棕色，修长的獠牙在阳光下泛着温润的光泽，正是传说中主掌丰收的<span class="item-name">当康</span>。</p><p>它似乎察觉到我的气息，猛地抬起头，警惕地盯着我，蹄子在地上轻轻刨动，发出"咚咚"的声响，像是在警告我不要靠近。</p>',
+                choices: [
+                    { text: '选择A：举起猎叉悄悄逼近，意图偷袭取牙', action: 'qinshan_attack' },
+                    { text: '选择B：取出行囊中的谷物种子，撒在一旁空地', action: 'qinshan_seeds' }
+                ],
+                npc: '当康',
+                item: null
+            },
+            qinshan_attack: {
+                bg: 'assets/bg/bg_qinshan.png',
+                text: '<h2>偷袭失败</h2><p>我选择握紧猎叉，猫着腰慢慢向当康靠近，趁它低头进食时猛地扑了上去。当康反应极快，猛地转身用獠牙顶住你的猎叉，巨大的力量将我掀翻在地。它怒吼一声，而后转身冲进谷田，一路踩踏破坏，原本饱满的谷穗散落一地。我爬起来时，当康早已不见踪影，只留下一片狼藉的农田，任务失败。</p>',
+                choices: [
+                    { text: '复活，回到刚进入钦山山麓的节点', action: 'qinshan_start' }
+                ],
+                npc: '当康拱麦子',
+                item: null
+            },
+            qinshan_seeds: {
+                bg: 'assets/bg/bg_qinshan.png',
+                text: '<h2>获得当康之牙</h2><p>我连忙停下脚步，双手摊开示意自己没有恶意，轻声说道："当康神兽，我慕名而来，只求一枚你的牙齿，用以催生作物、造福百姓，绝无伤害你的意思。"</p><p>当康只是盯着我，没有回应，依旧保持着警惕的姿态。我思索片刻，想起它主掌丰收，定是喜爱谷物，便从行囊里掏出精心保存的谷物种子，均匀地撒在不远处的空地上："这是我珍藏的谷物种子，送给你，希望能让这片土地更加丰饶。"</p><p>当康盯着种子看了片刻，眼中的警惕渐渐褪去，缓缓走上前低头啄食起来。它吃得津津有味，时不时还抬头看我一眼。等种子吃完，它竟主动走到我面前，用脑袋蹭了蹭我的手心，动作温顺极了。随后，它微微仰头，一枚脱落的獠牙轻轻落在我手中，带着淡淡的谷物香气。</p><p>我郑重地握紧獠牙，对着当康躬身致谢："多谢神兽馈赠，我定会好好利用这枚獠牙，不辜负你的善意。"当康对着我低吼一声，像是在回应，而后转身冲进谷田，消失在金浪之中。我收好<span class="item-name">当康之牙</span>，打开地图时，只见大地图上农耕相关的秘境已然解锁。</p>',
+                choices: [
+                    { text: '返回东山经舆图', action: 'dongshanjing_map' }
+                ],
+                npc: '当康拱麦子',
+                item: '当康之牙',
+                onEnter: function() {
+                    if (!gameState.dongshanItems.includes('当康之牙')) {
+                        gameState.dongshanItems.push('当康之牙');
+                    }
+                    if (!gameState.completedQuests.includes('qinshan')) {
+                        gameState.completedQuests.push('qinshan');
+                    }
+                }
+            },
+            yueshanyinpo_start: {
+                bg: 'assets/bg/bg_yueshanyinpo.jpg',
+                text: '<h2>余峨山</h2><p>灵光消散，我已站在余峨山阴坡。这里草木枯黄，地面散落着不少蝗虫尸体，一股淡淡的草木腐味扑面而来，让人有些不适。我拨开枯萎的灌木丛，忽然看到一只形似兔子的异兽正趴在地上一动不动——它长着鸟喙、鸱目和蛇尾，背上的鳞甲呈暗褐色，在光影下泛着细密的光泽，正是<span class="item-name">犰狳</span>。</p>',
+                choices: [
+                    { text: '选择A：直接伸手去剥取犰狳的鳞甲', action: 'yueshanyinpo_force' },
+                    { text: '选择B：取出行囊中的驱虫草药，撒在犰狳周围', action: 'yueshanyinpo_herb' }
+                ],
+                npc: '犰狳',
+                item: null
+            },
+            yueshanyinpo_force: {
+                bg: 'assets/bg/bg_yueshanyinpo.jpg',
+                text: '<h2>任务失败</h2><p>你见犰狳"死去"，便放心上前，伸手就去撕扯它的鳞甲。谁知手指刚触到鳞甲，犰狳猛地睁开鸱目，蛇尾瞬间缠住你的手腕，鸟喙对着你的手狠狠啄了一下。你疼得缩回手，只见周围的草丛中忽然涌出无数蝗虫，朝着你疯狂扑来。你只能狼狈逃窜，不仅没拿到鳞甲，还被蝗虫叮咬得满身红肿，任务失败。</p>',
+                choices: [
+                    { text: '复活，回到刚进入余峨山阴坡的节点', action: 'yueshanyinpo_start' }
+                ],
+                npc: '犰狳',
+                item: '蝗虫'
+            },
+            yueshanyinpo_herb: {
+                bg: 'assets/bg/bg_yueshanyinpo.jpg',
+                text: '<h2>获得犰狳之鳞</h2><p>我知道犰狳见人便佯死，也清楚它的出现常伴蝗灾，不敢贸然上前，轻声说道："犰狳异兽，我知道你并未真的死去，我此番前来，只是想取几片你的鳞甲，用以驱散蝗灾、保护作物，并无恶意。"</p><p>犰狳依旧趴在地上，毫无动静，仿佛真的没有听到我的话。我环顾四周，看到草丛中还有不少蝗虫在蠕动，便想起背包里有随身携带的驱虫草药，心中有了主意。我从行囊里取出草药，轻轻撒在犰狳周围的地面上，一边撒一边说："我这就帮你驱散周围的蝗虫，你放心，我绝不会伤害你。"</p><p>草药的香气渐渐弥漫开来，周围的蝗虫纷纷退散，消失在草丛深处。这时，犰狳缓缓睁开了眼睛，警惕地看了我一眼，见我确实没有恶意，才慢慢站起身，对着我叫了两声（其鸣自呼），像是在表达感谢。而后它转身跑向草丛，跑了几步又停下，回头看了看我，像是在示意我跟上。</p><p>我连忙跟过去，发现它刚才趴卧的地方留下了几片脱落的鳞甲。我小心地捡起<span class="item-name">犰狳之鳞</span>收好，对着犰狳躬身说道："多谢你愿意赠予我鳞甲，我定会让它发挥用处。"犰狳又叫了一声，而后钻进草丛消失不见。我刚转身，就见山坡下的农田里泛起灵光，大地图上的新区域随之亮起。</p>',
+                choices: [
+                    { text: '返回东山经舆图', action: 'dongshanjing_map' }
+                ],
+                npc: '犰狳',
+                item: '犰狳之鳞',
+                onEnter: function() {
+                    if (!gameState.dongshanItems.includes('犰狳之鳞')) {
+                        gameState.dongshanItems.push('犰狳之鳞');
+                    }
+                    if (!gameState.completedQuests.includes('yueshanyinpo')) {
+                        gameState.completedQuests.push('yueshanyinpo');
+                    }
+                }
+            },
+            dongshanjing_complete: {
+                bg: 'assets/bg/bg_daditu.PNG',
+                text: function() {
+                    const allItems = gameState.nanshanItems.concat(gameState.xishanItems, gameState.beishanItems, gameState.dongshanItems);
+                    const isAllComplete = checkAllQuestsComplete();
+                    if (isAllComplete) {
+                        return '<h2>东山经·完成</h2><p>恭喜你完成了东山经的所有任务！你已经收集到了：</p><ul style="list-style: none; padding-left: 0;">' + gameState.dongshanItems.map(function(item) { return '<li style="margin: 10px 0;"><span class="item-name">' + item + '</span></li>'; }).join('') + '</ul><p>收集完东山经的宝物后，<span class="item-name">白泽</span>的幻影缓缓浮现，眼中满是赞许："小友，东山经藏瑞兽凶兽，其形虽异，其用皆显天地之智。你能以仁心待瑞兽、以智谋取其用，更懂将神兽灵韵化作济世之力，实属难得。"我拱手道："多谢白泽先生夸赞，我只是遵循本心行事罢了。"白泽颔首："这些神兽的妙用与习性，当谨记于心、传之后世，让天地灵物的福祉惠及万生。"</p><p style="color: #F4D03F; font-size: 20px; text-align: center; margin-top: 30px;"><strong>恭喜！你已经集齐了四山经中的所有灵草与至宝！</strong></p>';
+                    } else {
+                        return '<h2>东山经·完成</h2><p>恭喜你完成了东山经的所有任务！你已经收集到了：</p><ul style="list-style: none; padding-left: 0;">' + gameState.dongshanItems.map(function(item) { return '<li style="margin: 10px 0;"><span class="item-name">' + item + '</span></li>'; }).join('') + '</ul><p>收集完东山经的宝物后，<span class="item-name">白泽</span>的幻影缓缓浮现，眼中满是赞许："小友，东山经藏瑞兽凶兽，其形虽异，其用皆显天地之智。你能以仁心待瑞兽、以智谋取其用，更懂将神兽灵韵化作济世之力，实属难得。"我拱手道："多谢白泽先生夸赞，我只是遵循本心行事罢了。"白泽颔首："这些神兽的妙用与习性，当谨记于心、传之后世，让天地灵物的福祉惠及万生。前路仍有奇兽秘境，切记敬而不畏、取之有道。"幻影消散，大地图上的探索之路仍在继续。</p>';
+                    }
+                },
+                choices: function() {
+                    const isAllComplete = checkAllQuestsComplete();
+                    if (isAllComplete) {
+                        return [
+                            { text: '前往白泽处，开启返程之门', action: 'game_complete' }
+                        ];
+                    } else {
+                        return [
+                            { text: '返回大地图', action: 'opening_4' }
+                        ];
+                    }
+                },
+                npc: '白泽',
+                item: null
+            },
+            game_complete: {
+                bg: 'assets/bg/bg_wo.png',
+                text: function() {
+                    return '<h2 style="color: #F4D03F; text-align: center; font-size: 36px; margin-bottom: 40px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">通关结语</h2><div style="line-height: 2.5; font-size: 19px; text-align: justify; padding: 30px; background: rgba(0, 0, 0, 0.3); border-radius: 10px; border: 2px solid rgba(244, 208, 63, 0.3);"><p style="margin-bottom: 25px; text-indent: 2em;">恭喜你顺利踏遍奇山异水，采仙草、取灵物、识神兽，于险途之中守仁心，在取舍之间明大道。</p><p style="margin-bottom: 25px; text-indent: 2em;">但《山海经》的世界远不止于此——大荒的旷野上，有神兽踏云而行；海外的孤岛中，有奇人餐风饮露；海内的深泽里，有灵物藏着创世的秘辛。那些未被踏足的土地，那些未被听闻的传说，正等待着你去揭开面纱。</p><p style="margin-bottom: 25px; text-indent: 2em;">从《五藏山经》到《大荒》《海外》《海内》，这部古老的典籍，从来都不是尘封的故纸堆，而是中华民族血脉里的文化根脉。你每一次深入山海的探索，都是与千年文明的对话；每一次对灵物妙用的探寻，都是对先祖智慧的传承。</p><p style="margin-top: 40px; text-align: center; color: #F4D03F; font-size: 22px; line-height: 1.8; font-weight: bold; text-shadow: 1px 1px 3px rgba(0,0,0,0.7);">去吧，收拾好行囊，重新展开这张包罗万象的山海大地图。去大荒看日月沉浮，去海外访殊方异域，去海内探天地奥秘。愿你以脚步丈量山海，以仁心承载文明，在探索中唤醒沉睡的文化记忆，让这份属于中华民族的古老瑰宝，在新时代焕发出璀璨的光芒，生生不息，代代相传！</p></div>';
+                },
+                choices: [
+                    { text: '重新开始游戏', action: 'opening_1' }
+                ],
+                npc: '白泽',
+                item: null,
+                hideItems: true
+            }
+        };
+
+        // 检查所有任务是否完成
+        function checkAllQuestsComplete() {
+            const requiredQuests = [
+                'zhaoyaoshan', 'niuyangshan', 'qingqiushan',  // 南山经
+                'kunlunshan', 'shicuishan', 'guishan',        // 西山经
+                'qiaomingshui', 'qiaomingshan', 'zhuoguangshan', // 北山经
+                'xunzhuangshan', 'qinshan', 'yueshanyinpo'    // 东山经
+            ];
+            return requiredQuests.every(function(quest) {
+                return gameState.completedQuests.includes(quest);
+            });
+        }
+
+        // 重置游戏状态
+        function resetGameState() {
+            gameState.currentScene = 'start';
+            gameState.collectedItems = [];
+            gameState.nanshanItems = [];
+            gameState.xishanItems = [];
+            gameState.beishanItems = [];
+            gameState.dongshanItems = [];
+            gameState.completedQuests = [];
+        }
+
+        // 背景音乐控制
+        let musicEnabled = true;
+        let backgroundMusic = null;
+        let musicControl = null;
+        let musicIconOn = null;
+        let musicIconOff = null;
+        let musicResumeTimer = null; // 用于存储音乐恢复的定时器
+
+        // 从localStorage读取音乐设置
+        function loadMusicSetting() {
+            const saved = localStorage.getItem('musicEnabled');
+            if (saved !== null) {
+                musicEnabled = saved === 'true';
+            }
+            updateMusicUI();
+        }
+
+        // 保存音乐设置
+        function saveMusicSetting() {
+            localStorage.setItem('musicEnabled', musicEnabled.toString());
+        }
+
+        // 更新音乐控制UI
+        function updateMusicUI() {
+            if (!musicControl) {
+                musicControl = document.getElementById('music-control');
+            }
+            if (!musicIconOn) {
+                musicIconOn = document.getElementById('music-icon-on');
+            }
+            if (!musicIconOff) {
+                musicIconOff = document.getElementById('music-icon-off');
+            }
+            
+            if (musicControl && musicIconOn && musicIconOff) {
+                if (musicEnabled) {
+                    musicControl.classList.remove('muted');
+                    musicIconOn.style.display = 'block';
+                    musicIconOff.style.display = 'none';
+                } else {
+                    musicControl.classList.add('muted');
+                    musicIconOn.style.display = 'none';
+                    musicIconOff.style.display = 'block';
+                }
+            }
+        }
+
+        // 播放背景音乐（简化版本，确保能播放）
+        function playBackgroundMusic() {
+            if (!backgroundMusic) {
+                backgroundMusic = document.getElementById('background-music');
+            }
+            
+            if (!backgroundMusic) {
+                console.error('背景音乐元素未找到！');
+                return;
+            }
+            
+            if (!musicEnabled) {
+                return;
+            }
+            
+            // 设置音量
+            backgroundMusic.volume = 0.5;
+            backgroundMusic.muted = false;
+            
+            // 直接尝试播放
+            const playPromise = backgroundMusic.play();
+            
+            if (playPromise !== undefined) {
+                playPromise.then(function() {
+                    console.log('✓ 背景音乐播放成功');
+                }).catch(function(error) {
+                    console.log('✗ 背景音乐播放失败:', error.name, error.message);
+                    console.log('提示：这通常是因为浏览器阻止了自动播放，需要用户交互');
+                });
+            } else {
+                // 如果play()返回undefined，直接调用（旧浏览器）
+                try {
+                    backgroundMusic.play();
+                    console.log('✓ 背景音乐播放成功（旧浏览器方式）');
+                } catch (e) {
+                    console.log('✗ 背景音乐播放失败:', e);
+                }
+            }
+        }
+
+        // 停止背景音乐
+        function stopBackgroundMusic() {
+            if (!backgroundMusic) {
+                backgroundMusic = document.getElementById('background-music');
+            }
+            if (backgroundMusic) {
+                backgroundMusic.pause();
+                backgroundMusic.currentTime = 0;
+            }
+        }
+
+        // 切换背景音乐
+        function toggleBackgroundMusic() {
+            musicEnabled = !musicEnabled;
+            updateMusicUI();
+            saveMusicSetting();
+            userInteracted = true; // 标记用户已交互
+            
+            if (musicEnabled) {
+                console.log('用户开启音乐，立即播放');
+                playBackgroundMusic();
+            } else {
+                console.log('用户关闭音乐');
+                stopBackgroundMusic();
+            }
+        }
+
+        // 初始化音乐控制
+        function initMusicControl() {
+            backgroundMusic = document.getElementById('background-music');
+            musicControl = document.getElementById('music-control');
+            musicIconOn = document.getElementById('music-icon-on');
+            musicIconOff = document.getElementById('music-icon-off');
+            
+            // 音乐控制按钮点击事件
+            if (musicControl) {
+                musicControl.addEventListener('click', function() {
+                    toggleBackgroundMusic();
+                });
+            }
+            
+            // 添加音频事件监听
+            if (backgroundMusic) {
+                // 检查音频源
+                const source = backgroundMusic.querySelector('source');
+                if (source) {
+                    console.log('音频文件路径:', source.src);
+                    // 测试文件是否存在
+                    fetch(source.src, { method: 'HEAD' })
+                        .then(function(response) {
+                            if (response.ok) {
+                                console.log('✓ 音频文件存在且可访问');
+                            } else {
+                                console.error('✗ 音频文件无法访问，状态码:', response.status);
+                            }
+                        })
+                        .catch(function(error) {
+                            console.error('✗ 无法检查音频文件:', error);
+                        });
+                }
+                
+                backgroundMusic.addEventListener('error', function(e) {
+                    console.error('✗ 背景音乐加载错误');
+                    console.error('错误代码:', backgroundMusic.error ? backgroundMusic.error.code : '未知');
+                    console.error('错误信息:', backgroundMusic.error ? backgroundMusic.error.message : '未知');
+                    console.error('请检查音频文件路径: assets/music/background (2).mp3');
+                    console.error('文件是否存在？文件名是否正确？');
+                });
+                
+                backgroundMusic.addEventListener('loadeddata', function() {
+                    console.log('✓ 背景音乐数据加载成功');
+                    // 加载成功后立即尝试播放
+                    if (musicEnabled) {
+                        setTimeout(function() {
+                            playBackgroundMusic();
+                        }, 100);
+                    }
+                });
+                
+                backgroundMusic.addEventListener('canplay', function() {
+                    console.log('✓ 背景音乐可以播放');
+                    // 可以播放时立即尝试播放
+                    if (musicEnabled && backgroundMusic.paused) {
+                        playBackgroundMusic();
+                    }
+                });
+                
+                backgroundMusic.addEventListener('canplaythrough', function() {
+                    console.log('✓ 背景音乐完全加载，可以流畅播放');
+                    // 完全加载后立即尝试播放
+                    if (musicEnabled && backgroundMusic.paused) {
+                        playBackgroundMusic();
+                    }
+                });
+                
+                backgroundMusic.addEventListener('play', function() {
+                    console.log('背景音乐开始播放');
+                    updateMusicUI(); // 确保UI状态正确
+                });
+                
+                backgroundMusic.addEventListener('pause', function() {
+                    console.log('背景音乐已暂停');
+                });
+                
+                // 监听音频加载进度
+                backgroundMusic.addEventListener('loadstart', function() {
+                    console.log('开始加载背景音乐...');
+                });
+                
+                backgroundMusic.addEventListener('progress', function() {
+                    console.log('背景音乐加载中...', Math.round(backgroundMusic.buffered.end(0) / backgroundMusic.duration * 100) + '%');
+                });
+            } else {
+                console.error('无法找到背景音乐元素！请检查HTML中是否有id="background-music"的audio元素');
+            }
+        }
+
+        // 用户交互标志（用于确保第一次交互时播放音乐）
+        let userInteracted = false;
+        
+        function initGame() {
+            // 初始化音乐控制
+            initMusicControl();
+            
+            // 加载音乐设置
+            loadMusicSetting();
+            
+            // 立即尝试播放背景音乐（页面加载时）
+            console.log('=== 开始初始化背景音乐 ===');
+            
+            if (backgroundMusic) {
+                // 强制加载音频
+                backgroundMusic.load();
+                
+                // 立即尝试播放
+                setTimeout(function() {
+                    playBackgroundMusic();
+                }, 200);
+                
+                // 在多个时间点尝试播放
+                setTimeout(function() {
+                    if (musicEnabled && backgroundMusic.paused) {
+                        playBackgroundMusic();
+                    }
+                }, 500);
+                
+                setTimeout(function() {
+                    if (musicEnabled && backgroundMusic.paused) {
+                        playBackgroundMusic();
+                    }
+                }, 1000);
+            } else {
+                console.error('✗ 背景音乐元素未找到！');
+            }
+            
+            // 监听页面可见性变化
+            document.addEventListener('visibilitychange', function() {
+                if (!document.hidden && musicEnabled && backgroundMusic && backgroundMusic.paused) {
+                    console.log('页面变为可见，尝试播放背景音乐');
+                    playBackgroundMusic();
+                }
+            });
+            
+            // 监听窗口焦点
+            window.addEventListener('focus', function() {
+                if (musicEnabled && backgroundMusic && backgroundMusic.paused) {
+                    console.log('窗口获得焦点，尝试播放背景音乐');
+                    playBackgroundMusic();
+                }
+            });
+            
+            // 监听整个页面的点击事件（确保第一次点击时播放）
+            document.addEventListener('click', function() {
+                if (!userInteracted && musicEnabled && backgroundMusic && backgroundMusic.paused) {
+                    userInteracted = true;
+                    console.log('检测到用户交互，立即播放背景音乐');
+                    playBackgroundMusic();
+                }
+            }, { once: true });
+            
+            showScene('opening_1');
+        }
+
+        function showScene(sceneKey) {
+            const scene = scenes[sceneKey];
+            if (!scene) {
+                console.error('场景不存在:', sceneKey);
+                return;
+            }
+
+            gameState.currentScene = sceneKey;
+
+            const bgImg = document.getElementById('background-image');
+            bgImg.src = scene.bg;
+            bgImg.onerror = function() {
+                this.style.display = 'none';
+            };
+            bgImg.style.display = 'block';
+
+            // 显示NPC图片
+            const npcBox = document.getElementById('npc-box');
+            const npcImage = document.getElementById('npc-image');
+            const npcValue = typeof scene.npc === 'function' ? scene.npc() : scene.npc;
+            if (npcValue && spriteMap[npcValue]) {
+                // 重置动画
+                npcBox.classList.remove('npc-box-appear');
+                npcImage.classList.remove('npc-appear');
+                
+                npcImage.src = spriteMap[npcValue];
+                npcImage.alt = npcValue;
+                npcImage.onerror = function() {
+                    npcBox.style.display = 'none';
+                };
+                npcBox.style.display = 'block';
+                
+                // 触发动画（使用setTimeout确保DOM更新后再添加动画类）
+                setTimeout(function() {
+                    npcBox.classList.add('npc-box-appear');
+                    npcImage.classList.add('npc-appear');
+                }, 10);
+            } else {
+                npcBox.style.display = 'none';
+                npcBox.classList.remove('npc-box-appear');
+                npcImage.classList.remove('npc-appear');
+            }
+
+            // 显示道具图片
+            const itemBox = document.getElementById('item-box');
+            const itemImage = document.getElementById('item-image');
+            const itemValue = typeof scene.item === 'function' ? scene.item() : scene.item;
+            if (itemValue && spriteMap[itemValue]) {
+                // 重置动画
+                itemBox.classList.remove('item-box-appear');
+                itemImage.classList.remove('item-appear', 'item-glow');
+                
+                itemImage.src = spriteMap[itemValue];
+                itemImage.alt = itemValue;
+                itemImage.onerror = function() {
+                    itemBox.style.display = 'none';
+                };
+                itemBox.style.display = 'block';
+                
+                // 触发动画（使用setTimeout确保DOM更新后再添加动画类）
+                setTimeout(function() {
+                    itemBox.classList.add('item-box-appear');
+                    itemImage.classList.add('item-appear');
+                    // 出场动画结束后，添加持续的光芒效果
+                    setTimeout(function() {
+                        itemImage.classList.add('item-glow');
+                    }, 1000);
+                }, 10);
+            } else {
+                itemBox.style.display = 'none';
+                itemBox.classList.remove('item-box-appear');
+                itemImage.classList.remove('item-appear', 'item-glow');
+            }
+
+            // 检查是否有NPC或道具显示，如果没有则居中文字框
+            const contentOverlay = document.getElementById('content-overlay');
+            const spriteContainer = document.getElementById('sprite-container');
+            const hasNpc = npcValue && spriteMap[npcValue];
+            const hasItem = itemValue && spriteMap[itemValue];
+            
+            if (!hasNpc && !hasItem) {
+                contentOverlay.classList.add('no-sprites');
+                spriteContainer.style.display = 'none';
+            } else {
+                contentOverlay.classList.remove('no-sprites');
+                spriteContainer.style.display = 'flex';
+            }
+
+            const textContent = document.getElementById('text-content');
+            let sceneText = '';
+            if (typeof scene.text === 'function') {
+                sceneText = scene.text();
+                textContent.innerHTML = sceneText;
+            } else {
+                sceneText = scene.text;
+                textContent.innerHTML = scene.text;
+            }
+            textContent.classList.add('fade-in');
+
+            // 检测是否是成功场景（获得物品的场景），如果是则播放庆祝音效
+            const isSuccessScene = sceneKey.includes('right_answer') || 
+                                  sceneKey.includes('success') || 
+                                  sceneKey.includes('_take_') ||
+                                  (sceneText && sceneText.includes('获得'));
+            
+            if (isSuccessScene) {
+                // 延迟播放，让场景先显示
+                setTimeout(function() {
+                    playSuccessSound();
+                }, 200);
+            }
+            
+            // 特殊处理：东山经完成场景（仅在完成所有任务时）
+            if (sceneKey === 'dongshanjing_complete') {
+                // 检查是否完成了所有任务（显示"恭喜！你已经集齐了四山经中的所有灵草与至宝！"）
+                const isAllComplete = checkAllQuestsComplete();
+                
+                if (isAllComplete) {
+                    // 播放成功音效（延迟一点让场景先显示）
+                    setTimeout(function() {
+                        console.log('播放完成音效 - 恭喜集齐所有宝物！');
+                        playSuccessSound();
+                    }, 300);
+                    // 注意：不再暂停背景音乐，背景音乐继续播放
+                }
+            }
+            
+            // 特殊处理：通关结语场景
+            if (sceneKey === 'game_complete') {
+                // 清除之前的恢复定时器（如果存在）
+                if (musicResumeTimer) {
+                    clearTimeout(musicResumeTimer);
+                    musicResumeTimer = null;
+                }
+                
+                // 播放通关音效（不同于普通成功音效）
+                setTimeout(function() {
+                    console.log('播放通关音效 - 恭喜通关！');
+                    playGameCompleteSound();
+                }, 300);
+                
+                // 暂停背景音乐5秒后恢复
+                if (!backgroundMusic) {
+                    backgroundMusic = document.getElementById('background-music');
+                }
+                
+                if (backgroundMusic && musicEnabled) {
+                    // 如果音乐正在播放，暂停它
+                    if (!backgroundMusic.paused) {
+                        console.log('暂停背景音乐5秒，播放通关音效...');
+                        backgroundMusic.pause();
+                    }
+                    
+                    // 5秒后恢复播放
+                    musicResumeTimer = setTimeout(function() {
+                        if (musicEnabled && backgroundMusic) {
+                            console.log('5秒后恢复背景音乐播放');
+                            playBackgroundMusic();
+                        }
+                        musicResumeTimer = null;
+                    }, 5000);
+                }
+            } else {
+                // 如果切换到其他场景，清除恢复定时器
+                if (musicResumeTimer) {
+                    clearTimeout(musicResumeTimer);
+                    musicResumeTimer = null;
+                }
+            }
+
+            const choicesContainer = document.getElementById('choices-container');
+            choicesContainer.innerHTML = '';
+
+            let choices = [];
+            if (typeof scene.choices === 'function') {
+                choices = scene.choices();
+            } else if (Array.isArray(scene.choices)) {
+                choices = scene.choices;
+            }
+
+            if (choices.length > 0) {
+                choices.forEach(function(choice, index) {
+                    const btn = document.createElement('button');
+                    btn.className = 'choice-btn fade-in';
+                    btn.style.animationDelay = (index * 0.1) + 's';
+                    
+                    if (choice.text.includes('选项') || choice.text.includes('选择')) {
+                        const label = choice.text.match(/[ABC]：/)?.[0] || '';
+                        if (label) {
+                            btn.innerHTML = '<span class="choice-label">' + label + '</span>' + choice.text.replace(/[ABC]：/, '');
+                        } else {
+                            btn.textContent = choice.text;
+                        }
+                    } else {
+                        btn.textContent = choice.text;
+                    }
+                    
+                    btn.onclick = function() { 
+                        playClickSound();
+                        // 用户交互后，强制播放背景音乐（解决自动播放限制）
+                        if (musicEnabled) {
+                            if (!backgroundMusic) {
+                                backgroundMusic = document.getElementById('background-music');
+                            }
+                            if (backgroundMusic) {
+                                if (backgroundMusic.paused) {
+                                    console.log('用户点击按钮，立即播放背景音乐');
+                                    playBackgroundMusic();
+                                }
+                            }
+                        }
+                        userInteracted = true;
+                        handleChoice(choice.action); 
+                    };
+                    choicesContainer.appendChild(btn);
+                });
+            }
+
+            if (scene.onEnter) {
+                scene.onEnter();
+            }
+
+            // 如果场景设置了hideItems为true，则不显示已收集物品
+            if (!scene.hideItems) {
+                updateCollectedItems();
+            } else {
+                // 清除可能存在的已收集物品显示
+                const textContent = document.getElementById('text-content');
+                const existingDisplay = textContent.querySelector('.items-display');
+                if (existingDisplay) {
+                    existingDisplay.remove();
+                }
+            }
+        }
+
+        // 播放点击音效（使用Web Audio API生成）
+        function playClickSound() {
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                // 设置音调（较高频率的短音效）
+                oscillator.frequency.value = 800;
+                oscillator.type = 'sine';
+                
+                // 设置音量包络（快速衰减）
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+                
+                // 播放音效
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.1);
+            } catch (error) {
+                // 如果Web Audio API不可用，静默处理
+                console.log('音效播放失败:', error);
+            }
+        }
+
+        // 播放庆祝音效（成功时的音效）
+        function playSuccessSound() {
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const currentTime = audioContext.currentTime;
+                
+                // 创建上升的音阶（类似"成功"的音效，类似经典的成功音效）
+                // 使用C大调的音阶：C(523Hz) -> E(659Hz) -> G(784Hz) -> C(1047Hz)
+                const notes = [
+                    { freq: 523.25, time: 0, duration: 0.2 },    // C
+                    { freq: 659.25, time: 0.15, duration: 0.2 }, // E
+                    { freq: 783.99, time: 0.3, duration: 0.2 },  // G
+                    { freq: 1046.50, time: 0.45, duration: 0.4 } // C (高八度，持续更久)
+                ];
+                
+                notes.forEach(function(note) {
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+                    
+                    oscillator.frequency.value = note.freq;
+                    oscillator.type = 'sine';
+                    
+                    // 设置音量包络（快速上升然后缓慢衰减，营造庆祝感）
+                    gainNode.gain.setValueAtTime(0, currentTime + note.time);
+                    gainNode.gain.linearRampToValueAtTime(0.5, currentTime + note.time + 0.03);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, currentTime + note.time + note.duration);
+                    
+                    oscillator.start(currentTime + note.time);
+                    oscillator.stop(currentTime + note.time + note.duration);
+                });
+            } catch (error) {
+                // 如果Web Audio API不可用，静默处理
+                console.log('庆祝音效播放失败:', error);
+            }
+        }
+
+        // 播放通关音效（通关结语场景的特殊音效，更隆重）
+        function playGameCompleteSound() {
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const currentTime = audioContext.currentTime;
+                
+                // 创建更隆重的通关音效
+                // 使用更丰富的和弦进行：C -> G -> C -> E -> G -> C (高八度)
+                // 营造更庄严、更完整的通关感
+                const notes = [
+                    { freq: 523.25, time: 0, duration: 0.25 },    // C
+                    { freq: 783.99, time: 0.2, duration: 0.25 },  // G
+                    { freq: 523.25, time: 0.4, duration: 0.25 },  // C
+                    { freq: 659.25, time: 0.6, duration: 0.3 },   // E
+                    { freq: 783.99, time: 0.85, duration: 0.3 },  // G
+                    { freq: 1046.50, time: 1.1, duration: 0.5 }  // C (高八度，持续更久，作为结尾)
+                ];
+                
+                notes.forEach(function(note) {
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+                    
+                    oscillator.frequency.value = note.freq;
+                    oscillator.type = 'sine';
+                    
+                    // 设置音量包络（更平滑的上升和衰减，营造庄严感）
+                    gainNode.gain.setValueAtTime(0, currentTime + note.time);
+                    gainNode.gain.linearRampToValueAtTime(0.6, currentTime + note.time + 0.05);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, currentTime + note.time + note.duration);
+                    
+                    oscillator.start(currentTime + note.time);
+                    oscillator.stop(currentTime + note.time + note.duration);
+                });
+            } catch (error) {
+                // 如果Web Audio API不可用，静默处理
+                console.log('通关音效播放失败:', error);
+            }
+        }
+
+        function handleChoice(action) {
+            if (action === 'accept') {
+                showScene('nanshanjing_map');
+            } else if (action === 'opening_1' && gameState.currentScene === 'game_complete') {
+                // 从通关场景重新开始游戏时，重置游戏状态
+                resetGameState();
+                showScene(action);
+            } else if (scenes[action]) {
+                showScene(action);
+            } else {
+                console.error('未知的动作:', action);
+            }
+        }
+
+        // 根据场景名称判断属于哪个章节
+        function getChapterByScene(sceneKey) {
+            if (sceneKey.startsWith('nanshanjing') || sceneKey.startsWith('zhaoyaoshan') || sceneKey.startsWith('niuyangshan') || sceneKey.startsWith('qingqiushan') || sceneKey === 'chapter_complete') {
+                return 'nanshan';
+            } else if (sceneKey.startsWith('xishanjing') || sceneKey.startsWith('kunlunshan') || sceneKey.startsWith('shicuishan') || sceneKey.startsWith('guishan') || sceneKey === 'xishanjing_complete') {
+                return 'xishan';
+            } else if (sceneKey.startsWith('beishanjing') || sceneKey.startsWith('qiaomingshui') || sceneKey.startsWith('qiaomingshan') || sceneKey.startsWith('zhuoguangshan') || sceneKey === 'beishanjing_complete') {
+                return 'beishan';
+            } else if (sceneKey.startsWith('dongshanjing') || sceneKey.startsWith('xunzhuangshan') || sceneKey.startsWith('qinshan') || sceneKey.startsWith('yueshanyinpo') || sceneKey === 'dongshanjing_complete') {
+                return 'dongshan';
+            }
+            return null;
+        }
+
+        function updateCollectedItems() {
+            const chapter = getChapterByScene(gameState.currentScene);
+            let items = [];
+            
+            if (chapter === 'nanshan') {
+                items = gameState.nanshanItems;
+            } else if (chapter === 'xishan') {
+                items = gameState.xishanItems;
+            } else if (chapter === 'beishan') {
+                items = gameState.beishanItems;
+            } else if (chapter === 'dongshan') {
+                items = gameState.dongshanItems;
+            }
+            
+            if (items.length > 0) {
+                const itemsHtml = items.map(function(item) {
+                    const itemIcon = spriteMap[item] ? '<img src="' + spriteMap[item] + '" alt="' + item + '" class="item-icon" onerror="this.style.display=\'none\'">' : '';
+                    return '<span class="item-name">' + itemIcon + item + '</span>';
+                }).join('、');
+                const itemsDisplay = document.createElement('div');
+                itemsDisplay.className = 'items-display';
+                itemsDisplay.innerHTML = '<strong style="color: #F4D03F;">已收集物品：</strong>' + itemsHtml;
+                
+                const textContent = document.getElementById('text-content');
+                const existingDisplay = textContent.querySelector('.items-display');
+                if (existingDisplay) {
+                    existingDisplay.remove();
+                }
+                textContent.appendChild(itemsDisplay);
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', initGame);
+    </script>
+</body>
+</html>
